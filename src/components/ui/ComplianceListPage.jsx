@@ -13,7 +13,7 @@ import {
 } from '../../services/complianceService';
 import { useAuth } from '../../context/AuthContext';
 import { getDueDate } from '../../utils/formatters';
-import { LS_KEYS } from '../../utils/constants';
+import { LS_KEYS, STATUS } from '../../utils/constants';
 
 // Thin stroke-based hourglass for the Overdue card (FontAwesome can't render a
 // thinner weight in the free set). Adjust strokeWidth to taste.
@@ -180,6 +180,16 @@ export default function ComplianceListPage({
   const isCompAdminDash = path.includes('/comp-admin/');
   const isAuthorityDash = path.includes('/authority/');
 
+  // The list endpoints match a record when ANY of the user's action rows carries a
+  // status in statusArray — and the pending arrays include 3 (Submitted) / 4
+  // (Re-Submitted), which are the user's own COMPLETED steps. So once a record is
+  // fully approved (master status 1) it keeps matching on that old action row and
+  // leaks into the Pending tab with an "Approved" badge. An approved record is not
+  // pending for anyone — it belongs to the Approved tab only.
+  const rows = tab === 'pending'
+    ? data.filter((row) => Number(row.status) !== STATUS.APPROVED)
+    : data;
+
   const showDeptCol = isCompAdminDash;
   // Comp Admin hides the person column ("Approved By") on its Approved tab;
   // all other Comp Admin tabs and the Authority dashboard keep it.
@@ -326,7 +336,7 @@ export default function ComplianceListPage({
           </h3>
         </div>
         <div className="p-4 md:p-5">
-          <DataTable columns={columns} data={data} loading={loading} reportTitle={`${listTitle} List`} />
+          <DataTable columns={columns} data={rows} loading={loading} reportTitle={`${listTitle} List`} />
         </div>
       </div>
     </div>
