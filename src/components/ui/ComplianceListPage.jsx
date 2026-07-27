@@ -180,14 +180,14 @@ export default function ComplianceListPage({
   const isCompAdminDash = path.includes('/comp-admin/');
   const isAuthorityDash = path.includes('/authority/');
 
-  // The list endpoints match a record when ANY of the user's action rows carries a
-  // status in statusArray — and the pending arrays include 3 (Submitted) / 4
-  // (Re-Submitted), which are the user's own COMPLETED steps. So once a record is
-  // fully approved (master status 1) it keeps matching on that old action row and
-  // leaks into the Pending tab with an "Approved" badge. An approved record is not
-  // pending for anyone — it belongs to the Approved tab only.
   const rows = tab === 'pending'
-    ? data.filter((row) => Number(row.status) !== STATUS.APPROVED)
+    ? data.filter((row) => {
+        const iAmStillWaiting = (row.compActionList || []).some(
+          (a) => Number(a.authEmpCode) === Number(user?.empCode) &&
+            [0, 5, 11, 22].includes(Number(a.status)),
+        );
+        return iAmStillWaiting || Number(row.status) !== STATUS.APPROVED;
+      })
     : data;
 
   const showDeptCol = isCompAdminDash;
@@ -238,14 +238,6 @@ export default function ComplianceListPage({
       key: 'status',
       label: 'Status',
       render: (row) => {
-        // Label the pending state by the ACTION TYPE of this user's current step,
-        // not the record's master status (which can read "Submitted" while it's
-        // actually pending an approver). Doer step (authLevel 1/4) -> "Submission
-        // Pending"; approver step (authLevel 2/3) -> "Pending".
-        // Only genuinely-waiting states — NOT 3 (Submitted) or 4 (Re-Submitted),
-        // which are completed doer actions. Otherwise a user's own re-submitted
-        // row (status 4) mislabels the record as "Submission Pending" after it has
-        // already moved on to the next approver.
         const myPending = (row.compActionList || [])
           .filter((a) => Number(a.authEmpCode) === Number(user?.empCode) &&
             [0, 5, 11, 22].includes(Number(a.status)))
