@@ -44,8 +44,8 @@ function actionHistoryStatus(status) {
   return ACTION_HISTORY_STATUS[Number(status)] || { label: 'Approved', variant: 'success' };
 }
 
-// Matches the backend comment column width.
-const COMMENT_MAX = 255;
+// Matches the DB comment column width (500) — keep the two in sync.
+const COMMENT_MAX = 500;
 
 export default function ComplianceView({ showAction = false }) {
   const { user } = useAuth();
@@ -404,11 +404,11 @@ export default function ComplianceView({ showAction = false }) {
                 <div className="form-group">
                   <label className="block text-[#3482AE] font-bold !text-[12px] mb-2 uppercase tracking-wide">COMMENT</label>
                   <textarea
-                    className="form-input text-xs h-24 pt-3 resize-y min-h-[60px]"
+                    className="form-input text-xs h-24 pt-2 resize-y min-h-[60px]"
                     value={comment}
                     onChange={(e) => setComment(e.target.value.slice(0, COMMENT_MAX))}
                     maxLength={COMMENT_MAX}
-                    placeholder="ENTER ..."
+                    placeholder="ENTER COMMENT ..."
                   />
                   <div className="flex items-start justify-between gap-2 mt-1">
                     <p className="text-red-500 text-xs">{actionErrors.comment || ''}</p>
