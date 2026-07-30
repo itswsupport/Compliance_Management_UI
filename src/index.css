@@ -1132,9 +1132,10 @@ body .swal2-container .swal2-styled.swal2-cancel {
     /* Remove sidebar offset */
   }
 
-  /* Specific spacing for heading on print */
+  /* Specific spacing for heading on print — kept tight so the generated-on
+     stamp sits directly under the title. */
   .section-title {
-    margin-bottom: 20px !important;
+    margin-bottom: 4px !important;
     font-size: 20px !important;
     color: #000000 !important;
     font-weight: bold !important;
@@ -1186,7 +1187,7 @@ body .swal2-container .swal2-styled.swal2-cancel {
   /* Generated-on date/time stamp, shown only on the printed page */
   .print-only-meta {
     display: block !important;
-    text-align: right !important;
+    text-align: left !important;
     font-size: 10px !important;
     color: #000000 !important;
     margin-bottom: 6px !important;

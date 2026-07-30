@@ -10,13 +10,9 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import { getDueDate, todayDate, currentTime, extractFilename } from '../../utils/formatters';
 import { LS_KEYS } from '../../utils/constants';
 
-// Which pending-row authLevels each dashboard is allowed to act on. The Comp Admin
-// view only surfaces the doer steps, the Comp Head view only the approval step,
-// etc. It matters for multi-role accounts (e.g. a user
-// who is BOTH Comp Admin and Comp Head): in Flow 1 the record reaches that person
-// twice, and the approve action (authLevel 2) must appear ONLY under the Comp Head
-// dashboard — never under the Comp Admin dashboard.
-//   authLevel 1/4 = doer submit / re-submit   2 = approver   3 = final approver
+// Pending-row authLevels each dashboard may act on — keeps a multi-role account
+// (e.g. Comp Admin + Comp Head) from acting on the wrong step.
+//   1/4 = doer submit / re-submit   2 = approver   3 = final approver
 const DASHBOARD_AUTH_LEVELS = {
   '/comp-admin/': [1, 4],
   '/plant-hr/':   [1, 4],
@@ -31,8 +27,7 @@ function allowedLevelsForCurrentDashboard() {
   return key ? DASHBOARD_AUTH_LEVELS[key] : null; // null = no dashboard restriction
 }
 
-// Status labels for the Action History table — a pending row reads "PENDING"
-// (not "Submission Pending") and status 4 reads "Re-Submitted".
+// Status labels for the Action History table (0 reads "Pending", 4 "Re-Submitted").
 const ACTION_HISTORY_STATUS = {
   0:  { label: 'Pending',                variant: 'warning' },
   1:  { label: 'Approved',               variant: 'success' },
@@ -48,6 +43,9 @@ const ACTION_HISTORY_STATUS = {
 function actionHistoryStatus(status) {
   return ACTION_HISTORY_STATUS[Number(status)] || { label: 'Approved', variant: 'success' };
 }
+
+// Matches the DB comment column width (500) — keep the two in sync.
+const COMMENT_MAX = 500;
 
 export default function ComplianceView({ showAction = false }) {
   const { user } = useAuth();
@@ -72,26 +70,15 @@ export default function ComplianceView({ showAction = false }) {
   const userLevel = Number(localStorage.getItem(LS_KEYS.GLOBEL_LEVEL) || 1);
   const globalEmpCode = localStorage.getItem(LS_KEYS.GLOBAL_EMP_CODE);
 
-  // The step is identified by the PENDING ROW's authLevel — the value the backend
-  // stamped on the action row it created for this user — NOT by the user's role.
-  // This is essential for multi-role accounts (e.g. a user who is both COMP ADMIN
-  // and COMP HEAD): the same person appears twice in Flow 1, and only the row's
-  // authLevel says whether they are the doer (submit) or the approver now.
-  //   authLevel 1 -> doer submits evidence (Comp Admin / Plant HR), status -> 3
-  //   authLevel 4 -> doer re-submits after a rejection, status -> 3
-  //   authLevel 2 -> approver (Comp Head / Corp HR), Approve/Reject
-  //   authLevel 3 -> final approver (HCM Head), Approve/Reject
-  // Flow 1 (CA):  Comp Head -> Comp Admin -> Comp Head -> HCM Head
-  // Flow 2 (PHR): Comp Head -> Plant HR   -> Corp HR   -> HCM Head
+  // Which form to show comes from the pending row's authLevel, not the user's
+  // role — a multi-role account can appear twice in the same flow.
   const isSubmitForm =
     pendingRowAuthLevel === 1 || pendingRowAuthLevel === 4;
 
-  // Each actor reports its OWN authLevel back; the backend routes onward from the
-  // flow config + (authLevel, status). Doers (1) and re-submit doers (4) both act
-  // at level 1; approvers echo their row's level (2 or 3).
+  // Doers (1) and re-submit doers (4) both act at level 1; approvers echo their row.
   const getNextAuthLevel = useCallback(() => {
     if (pendingRowAuthLevel == null) return userLevel;
-    if (pendingRowAuthLevel === 4) return 1; // re-submit doer acts at level 1
+    if (pendingRowAuthLevel === 4) return 1;
     return pendingRowAuthLevel;
   }, [pendingRowAuthLevel, userLevel]);
 
@@ -124,15 +111,11 @@ export default function ComplianceView({ showAction = false }) {
 
   function checkPendingStatus(actions) {
     if (!showAction) return;
-    // ONLY genuinely-waiting states — NOT status 3 (Submitted) or 4 (Re-Submitted),
-    // which are COMPLETED doer actions. Including 4 wrongly re-opened the form on a
-    // user's old re-submitted row after the record had moved on to the next approver.
-    //   0 = submission pending, 5 = overdue, 11 = level approval pending, 22 = final.
+    // Waiting states only — 3/4 are completed doer actions, not pending.
     const pendingSet = [0, 5, 11, 22];
     const allowed = allowedLevelsForCurrentDashboard();
 
-    // The current pending row is this user's LATEST row still in a waiting state, so
-    // scan newest-first and require the row's authLevel to belong to THIS dashboard.
+    // Newest-first: this user's latest waiting row that belongs to this dashboard.
     for (let i = actions.length - 1; i >= 0; i--) {
       const row = actions[i];
       const rowLevel = Number(row.authLevel);
@@ -142,12 +125,9 @@ export default function ComplianceView({ showAction = false }) {
         setShowActionCard(true);
         setPendingRowStatus(Number(row.status));
         setPendingRowAuthLevel(rowLevel);
-        // console.log(`Action card shown — status=${row.status}, authLevel=${rowLevel}, dashboard=${window.location.pathname}`);
         return;
       }
     }
-    // console.log(`No action for ${globalEmpCode} on ${window.location.pathname} (allowed levels=${JSON.stringify(allowed)}). Rows:`,
-    // actions.map((r) => ({ authEmpCode: r.authEmpCode, authLevel: r.authLevel, status: r.status })));
     setShowActionCard(false);
     setPendingRowStatus(null);
     setPendingRowAuthLevel(null);
@@ -200,11 +180,7 @@ export default function ComplianceView({ showAction = false }) {
         fd.append('status', selectedAction);
       }
 
-      // console.log(`Submitting: authLevel=${nextLevel}, emp_code=${globalEmpCode}, pendingStatus=${pendingRowStatus}`);
-
       const res = await saveComplianceAction(fd);
-      // console.log("Backend Response:", res.data);
-
       const obj = res.data;
       if (obj.status_code === 200) {
         let displayMessage = obj.message || 'Compliance Action Saved Successfully.';
@@ -261,7 +237,6 @@ export default function ComplianceView({ showAction = false }) {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-[#3482AE] font-bold text-sm uppercase tracking-wider">
           Compliance View
@@ -276,7 +251,6 @@ export default function ComplianceView({ showAction = false }) {
         )}
       </div>
 
-      {/* Hidden mst_id */}
       <input type="hidden" id="mst_id" value={comp.id} />
 
       {/* 1. Compliance Act Details */}
@@ -410,7 +384,7 @@ export default function ComplianceView({ showAction = false }) {
             {isSubmitForm ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
                 <div className="form-group">
-                  <label className="block text-[#3482AE] font-bold !text-[11px] mb-2 uppercase tracking-wide">DATE OF COMPLIANCE</label>
+                  <label className="block text-[#3482AE] font-bold !text-[12px] mb-2 uppercase tracking-wide">DATE OF COMPLIANCE</label>
                   <input
                     type="date"
                     className="form-input text-xs h-9"
@@ -419,7 +393,7 @@ export default function ComplianceView({ showAction = false }) {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-[#3482AE] font-bold !text-[11px] mb-2 uppercase tracking-wide">UPLOAD ATTACHMENT</label>
+                  <label className="block text-[#3482AE] font-bold !text-[12px] mb-2 uppercase tracking-wide">UPLOAD ATTACHMENT</label>
                   <input
                     type="file"
                     className="form-input text-xs h-9 bg-white cursor-pointer"
@@ -428,22 +402,28 @@ export default function ComplianceView({ showAction = false }) {
                   {actionErrors.attachment && <p className="text-red-500 text-xs mt-1">{actionErrors.attachment}</p>}
                 </div>
                 <div className="form-group">
-                  <label className="block text-[#3482AE] font-bold !text-[11px] mb-2 uppercase tracking-wide">ENTER COMMENT</label>
+                  <label className="block text-[#3482AE] font-bold !text-[12px] mb-2 uppercase tracking-wide">COMMENT</label>
                   <textarea
-                    className="form-input text-xs h-9 py-1.5 resize-y min-h-[36px]"
+                    className="form-input text-xs h-24 pt-2 resize-y min-h-[60px]"
                     value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="ENTER ..."
+                    onChange={(e) => setComment(e.target.value.slice(0, COMMENT_MAX))}
+                    maxLength={COMMENT_MAX}
+                    placeholder="ENTER COMMENT ..."
                   />
-                  {actionErrors.comment && <p className="text-red-500 text-xs mt-1">{actionErrors.comment}</p>}
+                  <div className="flex items-start justify-between gap-2 mt-1">
+                    <p className="text-red-500 text-xs">{actionErrors.comment || ''}</p>
+                    <span className="text-[12px] text-gray-400 shrink-0 leading-4">
+                      {comment.length}/{COMMENT_MAX}
+                    </span>
+                  </div>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="form-group">
-                  <label className="block text-[#3482AE] font-bold !text-[11px] mb-2 uppercase tracking-wide">Action :</label>
-                  <div className="flex items-center gap-4 text-xs">
-                    <label className="flex items-center gap-1.5 cursor-pointer font-bold">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                    <span className="text-[#3482AE] font-bold !text-[12px] uppercase tracking-wide shrink-0">Action :</span>
+                    <label className="flex items-center gap-1.5 cursor-pointer font-bold !text-[12px] uppercase tracking-wide text-green-600">
                       <input
                         type="radio"
                         name="sel_action"
@@ -452,9 +432,9 @@ export default function ComplianceView({ showAction = false }) {
                         onChange={(e) => { setSelectedAction(e.target.value); setActionErrors((prev) => ({ ...prev, selectedAction: '' })); }}
                         className="cursor-pointer"
                       />
-                      Approve
+                      APPROVE
                     </label>
-                    <label className="flex items-center gap-1.5 cursor-pointer font-bold">
+                    <label className="flex items-center gap-1.5 cursor-pointer font-bold !text-[12px] uppercase tracking-wide text-red-600">
                       <input
                         type="radio"
                         name="sel_action"
@@ -463,26 +443,36 @@ export default function ComplianceView({ showAction = false }) {
                         onChange={(e) => { setSelectedAction(e.target.value); setActionErrors((prev) => ({ ...prev, selectedAction: '' })); }}
                         className="cursor-pointer"
                       />
-                      Reject
+                      REJECT
                     </label>
                   </div>
                   {actionErrors.selectedAction && <p className="text-red-500 text-xs mt-1">{actionErrors.selectedAction}</p>}
                 </div>
 
-                <div className="form-group">
-                  <label className="block text-[#3482AE] font-bold !text-[11px] mb-2 uppercase tracking-wide">ENTER COMMENT <span className="text-red-500">*</span></label>
-                  <textarea
-                    className="form-input text-xs h-16 resize-y min-h-[36px]"
-                    value={comment}
-                    onChange={(e) => { setComment(e.target.value); setActionErrors((prev) => ({ ...prev, comment: '' })); }}
-                    placeholder="ENTER ..."
-                  />
-                  {actionErrors.comment && <p className="text-red-500 text-xs mt-1">{actionErrors.comment}</p>}
+                <div className="form-group flex items-start gap-4">
+                  <label className="text-[#3482AE] font-bold !text-[12px] uppercase tracking-wide shrink-0 pt-2">
+                    COMMENT <span className="text-red-500">*</span> :
+                  </label>
+                  <div className="flex-1">
+                    <textarea
+                      className="form-input text-xs h-44 resize-y min-h-[60px] pt-2"
+                      value={comment}
+                      onChange={(e) => { setComment(e.target.value.slice(0, COMMENT_MAX)); setActionErrors((prev) => ({ ...prev, comment: '' })); }}
+                      maxLength={COMMENT_MAX}
+                      placeholder="ENTER COMMENT ..."
+                    />
+                    <div className="flex items-start justify-between gap-2 mt-1">
+                      <p className="text-red-500 text-xs">{actionErrors.comment || ''}</p>
+                      <span className="text-[12px] text-gray-400 shrink-0 leading-4">
+                        {comment.length}/{COMMENT_MAX}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            <div className="bg-[#F8F9FA] border-t border-gray-200 -mx-5 -mb-5 mt-5 py-3 px-5 flex justify-center gap-2 rounded-b">
+            <div className="bg-[#F8F9FA] border-t border-gray-200 -mx-5 -mb-5 mt-2 py-3 px-5 flex justify-center gap-2 rounded-b">
               <button
                 onClick={handleActionSave}
                 disabled={submitting}

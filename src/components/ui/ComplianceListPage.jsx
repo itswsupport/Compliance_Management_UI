@@ -13,7 +13,7 @@ import {
 } from '../../services/complianceService';
 import { useAuth } from '../../context/AuthContext';
 import { getDueDate } from '../../utils/formatters';
-import { LS_KEYS } from '../../utils/constants';
+import { LS_KEYS, STATUS } from '../../utils/constants';
 
 // Thin stroke-based hourglass for the Overdue card (FontAwesome can't render a
 // thinner weight in the free set). Adjust strokeWidth to taste.
@@ -180,6 +180,16 @@ export default function ComplianceListPage({
   const isCompAdminDash = path.includes('/comp-admin/');
   const isAuthorityDash = path.includes('/authority/');
 
+  const rows = tab === 'pending'
+    ? data.filter((row) => {
+        const iAmStillWaiting = (row.compActionList || []).some(
+          (a) => Number(a.authEmpCode) === Number(user?.empCode) &&
+            [0, 5, 11, 22].includes(Number(a.status)),
+        );
+        return iAmStillWaiting || Number(row.status) !== STATUS.APPROVED;
+      })
+    : data;
+
   const showDeptCol = isCompAdminDash;
   // Comp Admin hides the person column ("Approved By") on its Approved tab;
   // all other Comp Admin tabs and the Authority dashboard keep it.
@@ -228,14 +238,6 @@ export default function ComplianceListPage({
       key: 'status',
       label: 'Status',
       render: (row) => {
-        // Label the pending state by the ACTION TYPE of this user's current step,
-        // not the record's master status (which can read "Submitted" while it's
-        // actually pending an approver). Doer step (authLevel 1/4) -> "Submission
-        // Pending"; approver step (authLevel 2/3) -> "Pending".
-        // Only genuinely-waiting states — NOT 3 (Submitted) or 4 (Re-Submitted),
-        // which are completed doer actions. Otherwise a user's own re-submitted
-        // row (status 4) mislabels the record as "Submission Pending" after it has
-        // already moved on to the next approver.
         const myPending = (row.compActionList || [])
           .filter((a) => Number(a.authEmpCode) === Number(user?.empCode) &&
             [0, 5, 11, 22].includes(Number(a.status)))
@@ -326,7 +328,7 @@ export default function ComplianceListPage({
           </h3>
         </div>
         <div className="p-4 md:p-5">
-          <DataTable columns={columns} data={data} loading={loading} reportTitle={`${listTitle} List`} />
+          <DataTable columns={columns} data={rows} loading={loading} reportTitle={`${listTitle} List`} />
         </div>
       </div>
     </div>
