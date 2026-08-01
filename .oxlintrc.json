@@ -1,6 +1,10 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["react", "oxc"],
+  // Stated here rather than left to .gitignore: .dockerignore keeps .gitignore
+  // out of the build context, so inside the builder image oxlint would
+  // otherwise walk all of node_modules and fail the Jenkins lint stage.
+  "ignorePatterns": ["node_modules/**", "dist/**", "public/**"],
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]
