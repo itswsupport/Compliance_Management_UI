@@ -72,7 +72,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LS_KEYS } from '../../utils/constants';
 
+// Still needed: the "Back to RUCHA Portal" link at the bottom of the form uses
+// it. Nothing auto-redirects here any more.
 const PORTAL_URL = 'https://replportal.co.in:8443/portal/dashboard.jsp';
+
 export default function LoginCheck() {
   const [searchParams] = useSearchParams();
   const { loginUser } = useAuth();
@@ -98,11 +101,14 @@ export default function LoginCheck() {
     // const empPass = localStorage.getItem(LS_KEYS.USER_PASSWORD);
 
     if (empCode) {
-      handleAutoLogin(empCode, empPass);   
-    } else if (import.meta.env.DEV) {
-      setIsManualLogin(true);             
+      handleAutoLogin(empCode, empPass);
     } else {
-      window.location.href = PORTAL_URL;   
+      // No credentials -> show the login form, on the server as well as
+      // locally. This branch used to be gated on import.meta.env.DEV, which is
+      // false in any `vite build`, so a deployed build always fell through to
+      // `window.location.href = PORTAL_URL` and bounced to dashboard.jsp.
+      // PORTAL_URL is still used by the "Back to RUCHA Portal" link below.
+      setIsManualLogin(true);
     }
   }, [searchParams]); 
   const handleAutoLogin = async (code, pass) => {
