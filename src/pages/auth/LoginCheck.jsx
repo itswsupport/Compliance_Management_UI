@@ -246,7 +246,7 @@ export default function LoginCheck() {
 
       </div>
 
-    </div>
+   </div>
   );
-}
+ }
 
