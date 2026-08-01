@@ -39,6 +39,11 @@ pipeline {
       defaultValue: false,
       description: 'Tick to fail the build when Trivy finds CRITICAL/HIGH issues instead of only reporting them.'
     )
+    booleanParam(
+      name: 'DEV_LOGIN',
+      defaultValue: false,
+      description: 'Tick to build with NODE_ENV=development, which makes import.meta.env.DEV true and shows LoginCheck\'s manual login form instead of redirecting to the RUCHA portal. TESTING ONLY: while the DEV component is active, that build also reads emp_code from the URL and authenticates with a hardcoded password, so anyone can sign in as any employee. The API URL is unaffected — it still comes from .env.production.'
+    )
   }
 
   environment {
@@ -62,6 +67,12 @@ pipeline {
         script {
           env.GIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
           env.TRIVY_EXIT_CODE = params.FAIL_ON_VULNERABILITIES ? '1' : '0'
+
+          // Vite reads import.meta.env.DEV from NODE_ENV, so this — not the
+          // Vite --mode — is what decides whether the manual login form is
+          // compiled in. BUILD_MODE is left at its production default either
+          // way, so the API URL always comes from .env.production.
+          env.BUILD_NODE_ENV = params.DEV_LOGIN ? 'development' : 'production'
         }
         echo "Building ${env.IMAGE}:${env.TAG} from ${env.GIT_SHA}"
       }
@@ -76,7 +87,7 @@ pipeline {
         sh """
           docker build \
             --target builder \
-            --build-arg VITE_API_BASE_URL='${params.VITE_API_BASE_URL}' \
+            --build-arg NODE_ENV='${env.BUILD_NODE_ENV}' \
             -t ${IMAGE}:builder-${TAG} \
             .
         """
@@ -109,7 +120,7 @@ pipeline {
       steps {
         sh """
           docker build \
-            --build-arg VITE_API_BASE_URL='${params.VITE_API_BASE_URL}' \
+            --build-arg NODE_ENV='${env.BUILD_NODE_ENV}' \
             -t ${IMAGE}:${TAG} \
             -t ${IMAGE}:latest \
             .
