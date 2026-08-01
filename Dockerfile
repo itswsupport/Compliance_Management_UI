@@ -26,22 +26,26 @@ COPY . .
 # Build-time environment variables
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
-# Build mode. Leave at production for anything deployed.
+# Two independent switches. Vite treats them separately, and conflating them
+# hides one behind the other:
 #
-# --build-arg BUILD_MODE=development builds a LOCAL-TESTING image: it makes
-# import.meta.env.DEV true, which is what LoginCheck.jsx gates its manual login
-# form on — a production build compiles that branch to false and redirects to
-# the RUCHA portal instead, so no login form can ever appear.
+#   BUILD_MODE -> which env file is read.  production = .env.production (live
+#                 API URL), development = .env (localhost API URL).
+#   NODE_ENV   -> the value of import.meta.env.DEV, which is what
+#                 LoginCheck.jsx gates its manual login form on. `--mode` alone
+#                 does NOT affect this; NODE_ENV=production forces DEV=false and
+#                 the app redirects to the RUCHA portal instead.
 #
-# The mode also picks the env file: production reads .env.production, while
-# development reads .env, which already holds the localhost API URL.
+# Both default to production, so a plain `docker build` — and Jenkins, which
+# passes neither — produces a deployable image.
+#
+#   Live deploy .............. (no build args)
+#   Login form + live API .... --build-arg NODE_ENV=development
+#   Login form + local API ... --build-arg NODE_ENV=development \
+#                              --build-arg BUILD_MODE=development
 ARG BUILD_MODE=production
-
-# NODE_ENV must track BUILD_MODE, not be pinned to production.
-# Vite derives import.meta.env.DEV/PROD from NODE_ENV — `--mode` alone only
-# chooses the .env file — so a hardcoded NODE_ENV=production silently forces
-# DEV=false and makes --mode development a no-op.
-ENV NODE_ENV=${BUILD_MODE}
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
 
 # Build the application.
 #
