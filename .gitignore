@@ -12,9 +12,14 @@ dist
 dist-ssr
 *.local
 
+# local env files
+.env*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+# Shared spell-checker dictionary — project identifiers, not personal settings.
+!.vscode/settings.json
 .idea
 .DS_Store
 *.suo

@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import { useIdleLogout } from '../../hooks/useIdleLogout';
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
+
+  // Signs out after 30 minutes of inactivity.
+  useIdleLogout();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
