@@ -26,7 +26,7 @@ pipeline {
     )
     string(
       name: 'HOST_PORT',
-      defaultValue: '3006',
+      defaultValue: '3030',
       description: 'Port on the Docker host to publish the app on.'
     )
     booleanParam(
