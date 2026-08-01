@@ -1,5 +1,10 @@
 # Multi-stage build for optimal efficiency
-FROM node:22-alpine AS deps
+#
+# Vite emits plain static files rather than a server, so the runner stage hosts
+# them with `serve`, which also supplies the SPA fallback.
+
+# Builder stage
+FROM node:22-alpine AS builder
 
 # Add labels for metadata
 LABEL maintainer="ruchatest4@gmail.com"
@@ -8,15 +13,10 @@ LABEL version="1.0"
 
 WORKDIR /app
 
-# Install dependencies based on lock file
-COPY package.json package-lock.json ./
-RUN npm ci --only=production --legacy-peer-deps --no-audit --no-fund
-
-# Builder stage
-FROM node:22-alpine AS builder
-WORKDIR /app
-
-# Copy dependency files
+# Install dependencies based on lock file.
+# This runs BEFORE `ENV NODE_ENV=production` on purpose: npm skips
+# devDependencies when NODE_ENV is production, and vite/oxlint live in
+# devDependencies — setting it first makes `npm run build` fail.
 COPY package.json package-lock.json ./
 RUN npm ci --legacy-peer-deps --no-audit --no-fund
 
@@ -24,36 +24,69 @@ RUN npm ci --legacy-peer-deps --no-audit --no-fund
 COPY . .
 
 # Build-time environment variables
-ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
-# Make API URL configurable at build time
-ARG VITE_API_BASE_URL=https://replportal.co.in:8443/compliancePortal/
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+# Build mode. Leave at production for anything deployed.
+#
+# --build-arg BUILD_MODE=development builds a LOCAL-TESTING image: it makes
+# import.meta.env.DEV true, which is what LoginCheck.jsx gates its manual login
+# form on — a production build compiles that branch to false and redirects to
+# the RUCHA portal instead, so no login form can ever appear.
+#
+# The mode also picks the env file: production reads .env.production, while
+# development reads .env, which already holds the localhost API URL.
+ARG BUILD_MODE=production
 
-# Build the application
-RUN npm run build
+# NODE_ENV must track BUILD_MODE, not be pinned to production.
+# Vite derives import.meta.env.DEV/PROD from NODE_ENV — `--mode` alone only
+# chooses the .env file — so a hardcoded NODE_ENV=production silently forces
+# DEV=false and makes --mode development a no-op.
+ENV NODE_ENV=${BUILD_MODE}
+
+# Build the application.
+#
+# The API URL comes from the env file above, loaded by Vite itself — it is
+# deliberately NOT set as an ENV here, because a process env var takes priority
+# over .env files and would override whatever that file says.
+#
+# Vite inlines VITE_* into the JS bundle, so the value is fixed at build time:
+# changing it means rebuilding, not restarting. A "localhost" value resolves in
+# the visitor's browser, not on the server.
+RUN npm run build -- --mode ${BUILD_MODE}
 
 # Runner stage
-FROM nginx:1.27-alpine AS runner
+FROM node:22-alpine AS runner
+WORKDIR /app
 
-# Server configuration.
-# Uses the same filename as the base image's stock config so it is replaced —
-# renaming this file would leave the default site serving on port 80.
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+ENV NODE_ENV=production
+
+# Static file server. `-s` rewrites every unmatched path to index.html:
+# BrowserRouter is mounted with no basename, so /comp-admin/pending exists only
+# in the browser and would otherwise 404 on refresh. serve gzips on its own.
+RUN npm install -g serve@14 --no-audit --no-fund
+
+# Create system user and group
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 appuser
 
 # Copy built application
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
+
+# Switch to non-root user
+USER appuser
 
 # Expose port
-EXPOSE 80
+# 3000, not 80: an unprivileged user cannot bind anything below 1024.
+EXPOSE 3000
+
+# Runtime environment variables
+ENV PORT=3000
 
 # Health check
 # 127.0.0.1, not localhost: the container's /etc/hosts maps localhost to ::1 as
-# well as 127.0.0.1, busybox wget tries IPv6 first, and `listen 80` is IPv4-only
-# — so `localhost` here fails with "connection refused" on a healthy container.
+# well as 127.0.0.1, so an IPv4-only listener refuses the IPv6 attempt first.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget -q -O /dev/null http://127.0.0.1/ || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1
 
 # Start the application
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["serve", "-s", "dist", "-l", "3000"]

@@ -26,7 +26,7 @@ pipeline {
     )
     string(
       name: 'HOST_PORT',
-      defaultValue: '3005',
+      defaultValue: '3030',
       description: 'Port on the Docker host to publish the app on.'
     )
     booleanParam(
@@ -119,12 +119,19 @@ pipeline {
 
     stage('Verify Bundle') {
       steps {
-        // Vite inlines VITE_API_BASE_URL into the JS, so a wrong or missing
-        // build-arg is invisible until someone opens the site and every request
-        // 404s. Assert the value actually reached the bundle.
+        // Vite inlines VITE_API_BASE_URL into the JS, so a wrong value is
+        // invisible until someone opens the site and every request 404s.
+        // Assert the value actually reached the bundle.
+        //
+        // The URL now comes from .env.production, which Vite reads itself — the
+        // Dockerfile no longer sets it as an ENV, because a process env var
+        // would take priority over that file. So this parameter no longer
+        // *sets* the URL; it asserts which URL the build was expected to carry,
+        // and fails here if .env.production says something else (a leftover
+        // localhost value, most likely).
         sh """
           docker run --rm --entrypoint sh ${IMAGE}:${TAG} -c \
-            "grep -rqF '${params.VITE_API_BASE_URL}' /usr/share/nginx/html/assets/" \
+            "grep -rqF '${params.VITE_API_BASE_URL}' /app/dist/assets/" \
             || { echo "API base URL '${params.VITE_API_BASE_URL}' is not present in the built bundle"; exit 1; }
           echo "bundle points at ${params.VITE_API_BASE_URL}"
         """
@@ -245,13 +252,14 @@ pipeline {
             sleep 1
           done
 
-          # HOST_PORT:80 — the right-hand side is the port INSIDE the
-          # container, and the image fixes that at 80 (nginx listens on 80 per
-          # nginx/default.conf). Only the left-hand side is yours to choose.
+          # HOST_PORT:3000 — the right-hand side is the port INSIDE the
+          # container, fixed at 3000 by the image: it runs as an unprivileged
+          # user, which cannot bind anything below 1024. Only the left-hand side
+          # is yours to choose.
           docker run -d \
             --name ${CONTAINER} \
             --restart unless-stopped \
-            -p ${params.HOST_PORT}:80 \
+            -p ${params.HOST_PORT}:3000 \
             ${IMAGE}:${TAG}
         """
       }
