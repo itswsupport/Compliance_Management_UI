@@ -1,7 +1,13 @@
 //  ═══════════════════════════════════════════════════════════════════════════
 //    PRODUCTION-
-//    To go live: comment out the component above, uncomment this one, and switch
-//    API_BASE_URL in src/utils/constants.js.
+//    To go live: uncomment this component (lines below), and comment out the
+//    DEV component further down the file. Exactly one must be active — both
+//    declare LoginCheck and PORTAL_URL, so leaving both uncommented fails the
+//    build rather than shipping the wrong one.
+//
+//    API_BASE_URL needs no change: it comes from VITE_API_BASE_URL, and
+//    `npm run build` reads .env.production automatically.
+//
 //    Credentials come from localStorage (written by the RUCHA portal).
 //    No emp_code -> back to the portal.
 //    Renders nothing while authenticating.

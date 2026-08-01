@@ -1,0 +1,53 @@
+{
+  // Project vocabulary for the Code Spell Checker extension. These are real
+  // identifiers from this codebase, its tooling, and the RUCHA portal — not
+  // typos. Without them the editor flags dozens of false positives in
+  // .dockerignore, the Jenkinsfile and the localStorage key names.
+  "cSpell.words": [
+    // Tooling / config file names
+    "dockerignore",
+    "gitignore",
+    "npmrc",
+    "oxlint",
+    "rolldown",
+    "vite",
+
+    // Dependencies
+    "autoprefixer",
+    "autotable",
+    "fontsource",
+    "geist",
+    "heroicons",
+    "jspdf",
+    "lucide",
+    "shadcn",
+    "sweetalert",
+    "tailwindcss",
+
+    // CI / deployment
+    "trivy",
+    "sonarqube",
+    "nginx",
+    "alpine",
+    "healthcheck",
+
+    // RUCHA portal + compliance domain
+    "rucha",
+    "replportal",
+    "compliance",
+    "compliancePortal",
+    "authorities",
+    "designation",
+
+    // localStorage key names and API params used across the app.
+    // 'globel' is the existing (misspelled) key prefix shared with the legacy
+    // JSP app — it must stay as-is, so silence it rather than "fix" it.
+    "globel",
+    "globelPlantId",
+    "globelLevel",
+    "globelAuthorities",
+    "empcode",
+    "desig",
+    "plantid"
+  ]
+}

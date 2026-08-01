@@ -1,8 +1,15 @@
-// Local Development Base URL:
-// export const API_BASE_URL = 'http://localhost:8099/compliancePortal/';
+// Comes from the .env files (see .env.example). `npm run dev` reads .env,
+// `npm run build` reads .env.production, and a VITE_API_BASE_URL supplied by
+// Docker beats both. Vite inlines the value at build time, so switching
+// environments means rebuilding — not restarting the container.
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Live Production Base URL (Uncomment for Production):
-export const API_BASE_URL = 'https://replportal.co.in:8443/compliancePortal/';
+export const SESSION_IDLE_MS = 30 * 60 * 1000;
+
+// How often the idle watchdog re-checks. Also re-checked on tab focus and on browser back, so a throttled background timer can't extend the session.
+export const SESSION_CHECK_MS = 15 * 1000;
+
+export const PORTAL_URL = 'https://replportal.co.in:8443/portal/dashboard.jsp';
 
 // Status codes used across compliance records
 export const STATUS = {
@@ -77,11 +84,17 @@ export const LS_KEYS = {
   GLOBAL_COMP_HEAD:   'global_compHead',
   GLOBAL_CORP_HR:     'global_corpHr',
   GLOBAL_HCM_HEAD:    'global_hcmHead',
-  GLOBAL_AUTHORITY:   'global_authority',
+  // Prefixed on purpose. The RUCHA portal owns the unprefixed 'global_authority'
+  // and stores a role string there (e.g. 'PLANT-HEAD'). Writing our boolean to
+  // that name overwrote the portal's value on login and deleted it on logout.
+  GLOBAL_AUTHORITY:   'comp_global_authority',
   GLOBAL_PLANT_HR:    'global_plantHr',
   LOGOUT_URL:         'logout_url',
   ID:                 'id',
   ID_COMP:            'idComp',
+  // Prefixed on purpose. Every RUCHA portal app shares this origin's localStorage,
+  // so an unprefixed name like 'last_activity' could be reset by another app.
+  LAST_ACTIVITY:      'comp_last_activity',
 };
 
 

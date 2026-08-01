@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/constants';
+import { markActivity } from '../utils/session';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -14,7 +15,12 @@ api.interceptors.request.use(
 
 // Response interceptor — unwrap data or handle errors globally
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // A completed request means the user is still working, even if they haven't
+    // touched the mouse — e.g. a long file upload. Keeps the idle clock honest.
+    markActivity();
+    return response;
+  },
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);

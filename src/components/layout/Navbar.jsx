@@ -1,4 +1,5 @@
 import { useAuth } from '../../context/AuthContext';
+import { PORTAL_URL } from '../../utils/constants';
 import Swal from 'sweetalert2';
 
 export default function Navbar({ onMenuToggle, sidebarOpen }) {
