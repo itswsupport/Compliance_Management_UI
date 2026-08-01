@@ -41,8 +41,8 @@ pipeline {
     )
     booleanParam(
       name: 'DEV_LOGIN',
-      defaultValue: false,
-      description: 'Tick to build with NODE_ENV=development, which makes import.meta.env.DEV true and shows LoginCheck\'s manual login form instead of redirecting to the RUCHA portal. TESTING ONLY: while the DEV component is active, that build also reads emp_code from the URL and authenticates with a hardcoded password, so anyone can sign in as any employee. The API URL is unaffected — it still comes from .env.production.'
+      defaultValue: true,
+      description: 'Builds with NODE_ENV=development, which makes import.meta.env.DEV true so LoginCheck shows its manual login form instead of redirecting to the RUCHA portal — the deployed site then behaves like a local build. UNTICK to get the normal portal handoff. Note that while the DEV component is active in LoginCheck.jsx, this build also reads emp_code from the URL and authenticates it with a hardcoded password. The API URL is unaffected — it still comes from .env.production.'
     )
   }
 
@@ -72,7 +72,15 @@ pipeline {
           // Vite --mode — is what decides whether the manual login form is
           // compiled in. BUILD_MODE is left at its production default either
           // way, so the API URL always comes from .env.production.
-          env.BUILD_NODE_ENV = params.DEV_LOGIN ? 'development' : 'production'
+          //
+          // Compared against false rather than used directly: on the first run
+          // after this parameter is added, Jenkins has not registered it yet
+          // and params.DEV_LOGIN is null. A plain truthiness test would read
+          // that as "off" and quietly build the wrong variant, which is exactly
+          // the failure this is meant to avoid — so only an explicit untick
+          // selects production.
+          env.BUILD_NODE_ENV = (params.DEV_LOGIN == false) ? 'production' : 'development'
+          echo "Building with NODE_ENV=${env.BUILD_NODE_ENV} (DEV_LOGIN=${params.DEV_LOGIN})"
         }
         echo "Building ${env.IMAGE}:${env.TAG} from ${env.GIT_SHA}"
       }
