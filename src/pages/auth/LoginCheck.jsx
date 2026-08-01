@@ -72,8 +72,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LS_KEYS } from '../../utils/constants';
 
-// const PORTAL_URL = 'https://replportal.co.in:8443/portal/dashboard.jsp';
-// const PORTAL_URL = 'https://replportal.co.in:8443/portal/dashboard.jsp';
+// Still needed: the "Back to RUCHA Portal" link at the bottom of the form uses
+// it. Nothing auto-redirects here any more.
+const PORTAL_URL = 'https://replportal.co.in:8443/portal/dashboard.jsp';
 
 export default function LoginCheck() {
   const [searchParams] = useSearchParams();
