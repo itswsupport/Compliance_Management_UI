@@ -150,7 +150,7 @@ pipeline {
         // localhost value, most likely).
         sh """
           docker run --rm --entrypoint sh ${IMAGE}:${TAG} -c \
-            "grep -rqF '${params.VITE_API_BASE_URL}' /app/dist/assets/" \
+            "grep -rqF '${params.VITE_API_BASE_URL}' /app/dist/compliance/assets/" \
             || { echo "API base URL '${params.VITE_API_BASE_URL}' is not present in the built bundle"; exit 1; }
           echo "bundle points at ${params.VITE_API_BASE_URL}"
         """
@@ -311,9 +311,9 @@ pipeline {
         // client-side route. Without nginx's try_files fallback, refreshing on
         // any route other than / returns 404 — assert it does not.
         sh """
-          CODE=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:${params.HOST_PORT}/comp-admin/pending)
+          CODE=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:${params.HOST_PORT}/compliance/comp-admin/pending)
           if [ "\$CODE" != "200" ]; then
-            echo "SPA fallback broken: /comp-admin/pending returned \$CODE, expected 200"
+            echo "SPA fallback broken: /compliance/comp-admin/pending returned \$CODE, expected 200"
             exit 1
           fi
           echo "SPA fallback OK"

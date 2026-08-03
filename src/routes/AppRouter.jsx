@@ -99,8 +99,9 @@ function ProtectedRoute({ children }) {
 }
 
 export default function AppRouter() {
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/compliance">
       <RouteTitle />
       <Routes>
         {/* Public */}
