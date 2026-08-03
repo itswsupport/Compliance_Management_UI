@@ -64,17 +64,26 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Static file server. `-s` rewrites every unmatched path to index.html:
-# BrowserRouter is mounted with no basename, so /comp-admin/pending exists only
-# in the browser and would otherwise 404 on refresh. serve gzips on its own.
+# Static file server. `-s` rewrites every unmatched path to index.html, so
+# client-side routes like /compliance/comp-admin/pending survive a refresh
+# instead of 404ing. serve gzips on its own.
 RUN npm install -g serve@14 --no-audit --no-fund
 
 # Create system user and group
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 appuser
 
-# Copy built application
-COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
+# Copy built application into a /compliance subdirectory, matching `base` in
+# vite.config.js: the built index.html asks for /compliance/assets/..., so the
+# files have to sit at that path for the URL to resolve.
+COPY --from=builder --chown=appuser:nodejs /app/dist ./dist/compliance
+
+# A second copy of index.html at the served root. `serve -s` rewrites any
+# unmatched path to /index.html — the ROOT one, it is not path-aware — so
+# without this a refresh on /compliance/comp-admin/pending 404s. This copy
+# still references /compliance/assets/..., so the app boots correctly and
+# BrowserRouter's basename picks the route back up from the URL.
+COPY --from=builder --chown=appuser:nodejs /app/dist/index.html ./dist/index.html
 
 # Switch to non-root user
 USER appuser
