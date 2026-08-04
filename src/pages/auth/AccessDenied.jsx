@@ -1,6 +1,5 @@
 import { useAuth } from '../../context/AuthContext';
-
-const HOME_PORTAL_URL = 'https://replportal.co.in:8443/portal/dashboard.jsp';
+import { PORTAL_URL } from '../../utils/constants';
 
 export default function AccessDenied() {
   const { logoutUser } = useAuth();
@@ -8,7 +7,7 @@ export default function AccessDenied() {
   // to the home portal. logoutUser() always clears localStorage even if the API fails.
   async function handleGoHome() {
     await logoutUser();
-    window.location.href = HOME_PORTAL_URL;
+    window.location.href = PORTAL_URL;
   }
 
   return (
@@ -16,7 +15,7 @@ export default function AccessDenied() {
       <div className="max-w-md w-full text-center space-y-6">
         <div className="flex justify-center">
           <img
-            src="/accessDenied2.png"
+            src={`${import.meta.env.BASE_URL}accessDenied2.png`}
             alt="Access Denied"
             className="w-1/2 object-contain"
             style={{ opacity: 0.8 }}

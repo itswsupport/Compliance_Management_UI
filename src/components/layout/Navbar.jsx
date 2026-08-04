@@ -18,7 +18,7 @@ export default function Navbar({ onMenuToggle, sidebarOpen }) {
     });
     if (result.isConfirmed) {
       await logoutUser();
-      window.location.href = 'https://replportal.co.in:8443/portal/dashboard.jsp';
+      window.location.href = PORTAL_URL;
     }
   }
 
@@ -50,7 +50,7 @@ export default function Navbar({ onMenuToggle, sidebarOpen }) {
           </button>
           <div className="absolute right-0 top-full mt-1 bg-white rounded shadow-lg border border-gray-200 py-1 w-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
             <a
-              href="/links/user_manual/ComplianceManagementSystemManual.pdf"
+              href={`${import.meta.env.BASE_URL}links/user_manual/ComplianceManagementSystemManual.pdf`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors normal-case"
