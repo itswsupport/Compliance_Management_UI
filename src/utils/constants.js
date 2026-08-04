@@ -4,9 +4,12 @@
 // environments means rebuilding — not restarting the container.
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+//   localStorage.setItem('comp_last_activity', String(Date.now() - 31*60*1000))
 export const SESSION_IDLE_MS = 30 * 60 * 1000;
 
-// How often the idle watchdog re-checks. Also re-checked on tab focus and on browser back, so a throttled background timer can't extend the session.
+// How often the watchdog checks whether the session has disappeared from
+// storage, i.e. whether another tab logged out. The idle gap itself is not
+// polled — it is measured on the user's next click. See hooks/useIdleLogout.js.
 export const SESSION_CHECK_MS = 15 * 1000;
 
 export const PORTAL_URL = 'https://replportal.co.in:8443/portal/dashboard.jsp';

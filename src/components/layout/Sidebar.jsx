@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { PORTAL_URL } from '../../utils/constants';
 import Swal from 'sweetalert2';
 
 const NAV_ITEMS = [
@@ -69,7 +70,7 @@ export default function Sidebar({ isOpen, onClose }) {
     });
     if (result.isConfirmed) {
       await logoutUser();
-      window.location.href = 'https://replportal.co.in:8443/portal/dashboard.jsp';
+      window.location.href = PORTAL_URL;
     }
   }
 
@@ -96,7 +97,11 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Brand Link (Always at top) */}
         {isOpen && (
           <div className="h-11 flex items-center px-4 border-b border-white/80 gap-2 flex-shrink-0 overflow-hidden">
-            <img src="/RUCHA-LOGO-WHITE.png" alt="Rucha Logo" className="flex-shrink-0" style={{ height: '24px', opacity: 0.9 }} />
+            {/* BASE_URL, not a leading slash: the app is served under vite.config.js's
+                `base`, so "/RUCHA-LOGO-WHITE.png" resolves at the server root and 404s.
+                Vite rewrites imported assets and index.html URLs, but not absolute URL
+                strings written in JSX — this has to carry the base itself. */}
+            <img src={`${import.meta.env.BASE_URL}RUCHA-LOGO-WHITE.png`} alt="Rucha Logo" className="flex-shrink-0" style={{ height: '24px', opacity: 0.9 }} />
             <span className="text-white text-[12px] uppercase tracking-wider whitespace-nowrap">
               Compliance Management
             </span>
@@ -108,7 +113,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <div className="px-4 py-2.5 border-b border-white/80 flex-shrink-0 overflow-hidden">
             <div className="flex items-center gap-3">
               <div className="bg-white rounded p-0.5 shadow-sm overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ width: '50px', height: '50px' }}>
-                <img src="/yogesh.png" alt="User Profile" className="w-full h-full object-cover rounded-sm" />
+                <img src={`${import.meta.env.BASE_URL}yogesh.png`} alt="User Profile" className="w-full h-full object-cover rounded-sm" />
               </div>
               <div className="min-w-0">
                 <p className="text-white text-[12px] uppercase truncate tracking-wide leading-snug font-normal">
@@ -126,7 +131,7 @@ export default function Sidebar({ isOpen, onClose }) {
         <nav className="flex-1 overflow-y-auto custom-scrollbar py-1">
           {/* Home — links to the main RUCHA portal home page (external) */}
           <a
-            href="https://replportal.co.in:8443/portal/dashboard.jsp"
+            href={PORTAL_URL}
             className={`sidebar-link flex items-center transition-all duration-300 ${isOpen ? 'gap-3 px-4' : '!justify-center !px-0'}`}
           >
             <svg

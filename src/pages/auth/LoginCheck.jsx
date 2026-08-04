@@ -2,8 +2,11 @@
 //    PRODUCTION-
 //    To go live: uncomment this component (lines below), and comment out the
 //    DEV component further down the file. Exactly one must be active — both
-//    declare LoginCheck and PORTAL_URL, so leaving both uncommented fails the
-//    build rather than shipping the wrong one.
+//    declare LoginCheck as the default export, so leaving both uncommented
+//    fails the build rather than shipping the wrong one.
+//
+//    PORTAL_URL is imported from utils/constants.js and shared with Sidebar,
+//    Navbar, AccessDenied and useIdleLogout — neither component redeclares it.
 //
 //    API_BASE_URL needs no change: it comes from VITE_API_BASE_URL, and
 //    `npm run build` reads .env.production automatically.
@@ -17,8 +20,6 @@
 // import { useNavigate } from 'react-router-dom';
 // import { useAuth } from '../../context/AuthContext';
 // import { LS_KEYS } from '../../utils/constants';
-
-// const PORTAL_URL = 'https://replportal.co.in:8443/portal/dashboard.jsp';
 
 // export default function LoginCheck() {
 //   const { loginUser, logoutUser } = useAuth();
@@ -70,15 +71,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LS_KEYS } from '../../utils/constants';
-
-// Still needed: the "Back to RUCHA Portal" link at the bottom of the form uses
-// it. Nothing auto-redirects here any more.
-const PORTAL_URL = 'https://replportal.co.in:8443/portal/dashboard.jsp';
+import { LS_KEYS, PORTAL_URL } from '../../utils/constants';
 
 export default function LoginCheck() {
   const [searchParams] = useSearchParams();
-  const { loginUser } = useAuth();
+  const { loginUser, logoutUser } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
@@ -117,12 +114,19 @@ export default function LoginCheck() {
     try {
       const user = await loginUser(code, pass);
       redirectByUserRole(user);
-    } catch {
-      if (import.meta.env.DEV) {
+    } catch (err) {
+      // UNAUTHORISED is an authorisation decision, not a typo — the account is
+      // real but has no row in comp_login_access. There is nothing useful to
+      // retype, so it lands on Access Denied in every build, local included.
+      //
+      // Anything else (unknown employee code, backend unreachable) still falls
+      // back to the manual form in dev, which is the point of that form.
+      if (err.message === 'UNAUTHORISED' || !import.meta.env.DEV) {
+        logoutUser();
+        navigate('/access-denied', { replace: true });
+      } else {
         setErrorMessage('Automatic login failed. Please enter credentials below.');
         setIsManualLogin(true);
-      } else {
-        navigate('/access-denied', { replace: true });
       }
     } finally {
       setLoading(false);
@@ -142,11 +146,15 @@ export default function LoginCheck() {
       const user = await loginUser(empCodeInput.trim(), passwordInput);
       redirectByUserRole(user);
     } catch (err) {
-      setErrorMessage(
-        err.message === 'UNAUTHORISED'
-          ? 'Unauthorized! You do not have permissions for this app.'
-          : 'User not found or connection failed.'
-      );
+      // Same rule as the automatic path: no permissions means the Access Denied
+      // page, not an inline message the user can only stare at. A wrong code or
+      // a dead backend stays on the form, where it can be corrected.
+      if (err.message === 'UNAUTHORISED') {
+        logoutUser();
+        navigate('/access-denied', { replace: true });
+        return;
+      }
+      setErrorMessage('User not found or connection failed.');
     } finally {
       setLoading(false);
     }
