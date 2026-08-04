@@ -11,13 +11,14 @@ export default function AccessDenied() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
-      <div className="max-w-md w-full text-center space-y-6">
+    <div className="min-h-screen flex flex-col bg-white">
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+      <div className="max-w-3xl w-full text-center space-y-6">
         <div className="flex justify-center">
           <img
             src={`${import.meta.env.BASE_URL}accessDenied2.png`}
             alt="Access Denied"
-            className="w-1/2 object-contain"
+            className="w-full object-contain"
             style={{ opacity: 0.8 }}
           />
         </div>
@@ -44,6 +45,21 @@ export default function AccessDenied() {
           </button>
         </div>
       </div>
+      </div>
+
+      <footer className="text-center sm:text-left font-bold px-4 py-3 border-t border-gray-200 bg-white text-[12px] text-[#869099] uppercase tracking-wide leading-relaxed">
+        COPYRIGHT &copy; 2025&nbsp;
+        <a
+          href="https://www.rucha.co.in"
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary font-bold hover:underline normal-case"
+          style={{ color: '#3482AE' }}
+        >
+          RUCHA ENGINEERS PVT. LTD.
+        </a>
+        . <span className="text-gray-500 font-normal">ALL RIGHTS RESERVED.</span>
+      </footer>
     </div>
   );
 }
