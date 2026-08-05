@@ -99,7 +99,13 @@ export function AuthProvider({ children }) {
     }
 
     // Persist the session keys
-    localStorage.setItem(LS_KEYS.LIVE_URL_BASE,      API_BASE_URL);
+    //
+    // Absolutised on the way out. API_BASE_URL is now the relative path
+    // /compliancePortal/, but `live_url_base` is read by the RUCHA portal and
+    // the other apps sharing this origin, which expect a full URL. new URL()
+    // leaves an already-absolute value untouched, so this is correct either way.
+    localStorage.setItem(LS_KEYS.LIVE_URL_BASE,
+      new URL(API_BASE_URL, window.location.origin).href);
     localStorage.setItem(LS_KEYS.GLOBAL_EMP_CODE,    resp.username);
     localStorage.setItem(LS_KEYS.GLOBAL_EMP_NAME,    name);
     localStorage.setItem(LS_KEYS.GLOBAL_DESIGNATION, resp.designation?.desigName || '');
