@@ -1,0 +1,89 @@
+# UI container web server.
+#
+# This replaces `serve`, which was a static file server and nothing else. The
+# difference is the whole reason the API used to be unreachable: `serve` could
+# only hand out files, so the browser had to call the Spring backend directly on
+# a port the firewall blocks. nginx can proxy, so the API is served from this
+# same origin — the arrangement the ETMS UI already uses, where the backend is
+# never exposed publicly and the UI container reaches it over the docker
+# gateway.
+#
+# Rendered at container start by the nginx entrypoint, which substitutes
+# ${BACKEND_URL} from the environment. nginx's own $variables are untouched:
+# envsubst only replaces names that exist as environment variables, and
+# NGINX_ENVSUBST_FILTER in the Dockerfile narrows it to BACKEND_URL alone.
+
+server {
+    listen 3000;
+    server_name _;
+
+    root /usr/share/nginx/html;
+
+    # `serve` gzipped on its own; nginx has to be told.
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # Must not be lower than the backend's limit, or nginx rejects a large
+    # upload before Spring ever sees it — with a 413 that looks like a frontend
+    # bug. application.properties sets max-file-size and max-request-size to
+    # 50MB.
+    client_max_body_size 50m;
+
+    # The app is built with base '/compliance/' (see vite.config.js), so every
+    # asset URL in index.html starts with that prefix and the files live there.
+    #
+    # try_files sends unmatched paths to index.html so client-side routes like
+    # /compliance/comp-admin/pending survive a refresh. Unlike `serve -s`, this
+    # is path-aware — it falls back to the index.html inside /compliance/, not
+    # one at the server root — so the duplicate copy the old Dockerfile kept at
+    # the root is no longer needed.
+    location /compliance/ {
+        try_files $uri $uri/ /compliance/index.html;
+    }
+
+    # Hashed filenames, so a long cache is safe and a rebuild busts it anyway.
+    location /compliance/assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # index.html itself must never be cached, or browsers keep loading an old
+    # one that points at asset filenames the new build no longer contains.
+    location = /compliance/index.html {
+        add_header Cache-Control "no-store, must-revalidate";
+    }
+
+    location = / {
+        return 302 /compliance/;
+    }
+
+    # Same-origin API.
+    #
+    # VITE_API_BASE_URL is the relative path /compliancePortal/, so the browser
+    # resolves it against whatever origin served the page and the request
+    # arrives here. This forwards it to the backend, which stays unpublished.
+    #
+    # The prefix matches the backend's context path exactly
+    # (server.servlet.context-path), and proxy_pass carries no trailing path, so
+    # the URI is forwarded unchanged — no rewrite to keep in step.
+    location /compliancePortal/ {
+        proxy_pass ${BACKEND_URL};
+
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # File upload and download endpoints move 50MB through this, which can
+        # outlast the 60s default on a slow connection.
+        proxy_connect_timeout 30s;
+        proxy_send_timeout    300s;
+        proxy_read_timeout    300s;
+
+        # Let downloads stream instead of being buffered to disk first.
+        proxy_buffering off;
+    }
+}

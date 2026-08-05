@@ -29,6 +29,11 @@ pipeline {
       defaultValue: '3030',
       description: 'Port on the Docker host to publish the app on.'
     )
+    string(
+      name: 'BACKEND_URL',
+      defaultValue: 'http://172.17.0.1:8099',
+      description: 'Where the UI container forwards /compliancePortal/ requests. 172.17.0.1 is the docker0 gateway — the host as seen from inside the container — and 8099 is the port the backend deploy publishes. Read at container START, not at build time, so changing it needs a redeploy but not a rebuild. No trailing slash and no path: the request URI is forwarded unchanged.'
+    )
     booleanParam(
       name: 'DEPLOY',
       defaultValue: true,
@@ -148,9 +153,15 @@ pipeline {
         // *sets* the URL; it asserts which URL the build was expected to carry,
         // and fails here if .env.production says something else (a leftover
         // localhost value, most likely).
+        //
+        // The path is nginx's document root, not /app/dist: the runner stage
+        // serves the build with nginx rather than `serve`, and the two put the
+        // files in different places. grep on a directory that does not exist
+        // fails the same way a missing URL does, so a stale path here reads as
+        // a bundle problem and sends you looking in the wrong file.
         sh """
           docker run --rm --entrypoint sh ${IMAGE}:${TAG} -c \
-            "grep -rqF '${params.VITE_API_BASE_URL}' /app/dist/compliance/assets/" \
+            "grep -rqF '${params.VITE_API_BASE_URL}' /usr/share/nginx/html/compliance/assets/" \
             || { echo "API base URL '${params.VITE_API_BASE_URL}' is not present in the built bundle"; exit 1; }
           echo "bundle points at ${params.VITE_API_BASE_URL}"
         """
@@ -279,6 +290,7 @@ pipeline {
             --name ${CONTAINER} \
             --restart unless-stopped \
             -p ${params.HOST_PORT}:3000 \
+            -e BACKEND_URL='${params.BACKEND_URL}' \
             ${IMAGE}:${TAG}
         """
       }
@@ -290,16 +302,45 @@ pipeline {
         // Polls rather than sleeping a fixed time: the container is ready when
         // it answers, not when a timer says so.
         sh """
+          UP=0
           for i in \$(seq 1 30); do
-            if curl -fsS -o /dev/null http://localhost:${params.HOST_PORT}/; then
+            if curl -fsS -o /dev/null http://localhost:${params.HOST_PORT}/compliance/; then
               echo "up after \${i}s"
-              exit 0
+              UP=1
+              break
             fi
             sleep 1
           done
-          echo "app did not answer on / within 30s"
-          docker logs --tail 50 ${CONTAINER}
-          exit 1
+
+          if [ "\$UP" != "1" ]; then
+            echo "app did not answer on /compliance/ within 30s"
+            docker logs --tail 50 ${CONTAINER}
+            exit 1
+          fi
+
+          # The API proxy is the other half of the container's job and fails
+          # differently from the static files: a broken BACKEND_URL still serves
+          # the app perfectly while every login returns 502. Assert it here
+          # rather than letting users find it.
+          #
+          # Content-type, not status: the backend answers an unknown emp_code
+          # with its own 401 inside a 200 envelope, and either is fine — what
+          # matters is that JSON comes back rather than nginx's HTML error page.
+          CT=\$(curl -s -o /dev/null -w '%{content_type}' \
+            "http://localhost:${params.HOST_PORT}/compliancePortal/login?emp_code=0&emp_pass=x" || true)
+
+          case "\$CT" in
+            application/json*)
+              echo "API proxy reaching backend at ${params.BACKEND_URL}"
+              ;;
+            *)
+              echo "API proxy is NOT reaching the backend (content-type: \${CT:-none})"
+              echo "the app itself is serving, but /compliancePortal/ does not return JSON"
+              echo "check that the backend is up and that BACKEND_URL is right: ${params.BACKEND_URL}"
+              docker logs --tail 50 ${CONTAINER}
+              exit 1
+              ;;
+          esac
         """
       }
     }
