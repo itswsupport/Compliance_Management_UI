@@ -59,47 +59,56 @@ ENV NODE_ENV=${NODE_ENV}
 RUN npm run build -- --mode ${BUILD_MODE}
 
 # Runner stage
-FROM node:22-alpine AS runner
-WORKDIR /app
+#
+# nginx rather than `serve`, because the app needs a server that can proxy, not
+# just one that can hand out files. VITE_API_BASE_URL is the relative path
+# /compliancePortal/, so API calls arrive at this container and are forwarded to
+# the backend from here — same origin, no CORS, and the backend never has to be
+# published through the firewall. See nginx.conf.template.
+#
+# The -unprivileged variant, not the stock nginx image: stock nginx starts as
+# root to bind port 80 and drops privileges for its workers. This one runs
+# entirely as uid 101 with its pid and temp paths already pointed somewhere
+# writable, which is what the previous stage's non-root appuser gave us.
+FROM nginxinc/nginx-unprivileged:1.27-alpine AS runner
 
-ENV NODE_ENV=production
+# Templates in this directory are rendered by the image's entrypoint at startup,
+# with ${BACKEND_URL} substituted from the environment. The filter keeps
+# envsubst to that one name so nginx's own $host, $uri and friends survive.
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+# \$ is an escaped literal dollar — the anchor belongs to the regex, and an
+# unescaped one would be read as the start of a Dockerfile variable.
+ENV NGINX_ENVSUBST_FILTER="^BACKEND_URL\$"
 
-# Static file server. `-s` rewrites every unmatched path to index.html, so
-# client-side routes like /compliance/comp-admin/pending survive a refresh
-# instead of 404ing. serve gzips on its own.
-RUN npm install -g serve@14 --no-audit --no-fund
+# Where this container reaches the Spring backend. 172.17.0.1 is the docker0
+# gateway — the host as seen from inside a container on the default bridge —
+# and 8099 is where the backend deploy publishes itself. This is the same route
+# the ETMS UI container uses to reach its own backend.
+#
+# Overridable at `docker run` time with -e BACKEND_URL=..., so moving the
+# backend does not mean rebuilding the image.
+ENV BACKEND_URL=http://172.17.0.1:8099
 
-# Create system user and group
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 appuser
+# Built app under /compliance, matching `base` in vite.config.js: the built
+# index.html asks for /compliance/assets/..., so the files have to sit at that
+# path for the URL to resolve.
+#
+# No second copy at the root any more. That existed because `serve -s` rewrote
+# unmatched paths to the ROOT index.html regardless of their prefix; nginx's
+# try_files is path-aware and falls back within /compliance/ itself.
+COPY --from=builder /app/dist /usr/share/nginx/html/compliance
 
-# Copy built application into a /compliance subdirectory, matching `base` in
-# vite.config.js: the built index.html asks for /compliance/assets/..., so the
-# files have to sit at that path for the URL to resolve.
-COPY --from=builder --chown=appuser:nodejs /app/dist ./dist/compliance
-
-# A second copy of index.html at the served root. `serve -s` rewrites any
-# unmatched path to /index.html — the ROOT one, it is not path-aware — so
-# without this a refresh on /compliance/comp-admin/pending 404s. This copy
-# still references /compliance/assets/..., so the app boots correctly and
-# BrowserRouter's basename picks the route back up from the URL.
-COPY --from=builder --chown=appuser:nodejs /app/dist/index.html ./dist/index.html
-
-# Switch to non-root user
-USER appuser
-
-# Expose port
-# 3000, not 80: an unprivileged user cannot bind anything below 1024.
+# 3000, not 80: an unprivileged user cannot bind anything below 1024. The
+# Jenkins deploy maps HOST_PORT to this.
 EXPOSE 3000
 
-# Runtime environment variables
-ENV PORT=3000
-
-# Health check
 # 127.0.0.1, not localhost: the container's /etc/hosts maps localhost to ::1 as
 # well as 127.0.0.1, so an IPv4-only listener refuses the IPv6 attempt first.
+#
+# /compliance/ rather than /, so a broken asset path fails the health check
+# instead of passing on the redirect that / returns.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:3000/compliance/ || exit 1
 
-# Start the application
-CMD ["serve", "-s", "dist", "-l", "3000"]
+# Inherited from the base image: the entrypoint renders the template, then execs
+# nginx in the foreground.
