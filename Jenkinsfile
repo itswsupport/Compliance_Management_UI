@@ -21,8 +21,8 @@ pipeline {
   parameters {
     string(
       name: 'VITE_API_BASE_URL',
-      defaultValue: 'https://replportal.co.in:8443/compliancePortal/',
-      description: 'Spring backend the browser calls. Baked in at BUILD time by Vite — changing it requires a rebuild, not a restart. Never "localhost" here for a deployed build: that resolves in the visitor\'s browser, not on the server.'
+      defaultValue: '/compliancePortal/',
+      description: 'API path the browser calls, asserted against the built bundle by the Verify Bundle stage. Now a relative path: the browser resolves it against the origin serving the page, so nginx must proxy /compliancePortal/ to the backend on that same origin. Keep this in step with .env.production, which is what actually sets the value — Vite reads that file itself and bakes the result in at BUILD time, so a change needs a rebuild, not a restart.'
     )
     string(
       name: 'HOST_PORT',
