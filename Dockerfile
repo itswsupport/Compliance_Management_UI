@@ -98,9 +98,11 @@ ENV BACKEND_URL=http://172.17.0.1:8099
 # try_files is path-aware and falls back within /compliance/ itself.
 COPY --from=builder /app/dist /usr/share/nginx/html/compliance
 
-# 3000, not 80: an unprivileged user cannot bind anything below 1024. The
-# Jenkins deploy maps HOST_PORT to this.
-EXPOSE 3000
+# 3030, not 80: an unprivileged user cannot bind anything below 1024. Must match
+# `listen` in nginx.conf.template and the right-hand side of the Jenkins
+# `-p HOST_PORT:3030` mapping — all three move together or the port publishes
+# onto nothing.
+EXPOSE 3030
 
 # 127.0.0.1, not localhost: the container's /etc/hosts maps localhost to ::1 as
 # well as 127.0.0.1, so an IPv4-only listener refuses the IPv6 attempt first.
@@ -108,7 +110,7 @@ EXPOSE 3000
 # /compliance/ rather than /, so a broken asset path fails the health check
 # instead of passing on the redirect that / returns.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget -q -O /dev/null http://127.0.0.1:3000/compliance/ || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:3030/compliance/ || exit 1
 
 # Inherited from the base image: the entrypoint renders the template, then execs
 # nginx in the foreground.
