@@ -14,7 +14,7 @@
 # NGINX_ENVSUBST_FILTER in the Dockerfile narrows it to BACKEND_URL alone.
 
 server {
-    listen 3000;
+    listen 3030;
     server_name _;
 
     root /usr/share/nginx/html;
