@@ -282,14 +282,14 @@ pipeline {
             sleep 1
           done
 
-          # HOST_PORT:3000 — the right-hand side is the port INSIDE the
-          # container, fixed at 3000 by the image: it runs as an unprivileged
+          # HOST_PORT:3030 — the right-hand side is the port INSIDE the
+          # container, fixed at 3030 by the image: it runs as an unprivileged
           # user, which cannot bind anything below 1024. Only the left-hand side
           # is yours to choose.
           docker run -d \
             --name ${CONTAINER} \
             --restart unless-stopped \
-            -p ${params.HOST_PORT}:3000 \
+            -p ${params.HOST_PORT}:3030 \
             -e BACKEND_URL='${params.BACKEND_URL}' \
             ${IMAGE}:${TAG}
         """
