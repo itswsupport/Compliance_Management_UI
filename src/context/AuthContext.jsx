@@ -1,6 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { LS_KEYS, API_BASE_URL } from '../utils/constants';
-import { login as apiLogin, logout as apiLogout } from '../services/authService';
+import { LS_KEYS, API_BASE_URL, API_STATUS } from '../utils/constants';
+import {
+  login as apiLogin,
+  loginWithToken as apiLoginWithToken,
+  logout as apiLogout,
+} from '../services/authService';
 import { markActivity } from '../utils/session';
 
 const AuthContext = createContext(null);
@@ -59,17 +63,20 @@ export function AuthProvider({ children }) {
   }
 
   /**
-   * Perform login
+   * Turns the backend's LoginUser into this app's session and holds on to it.
+   *
+   * Shared by both ways in — the password login and the portal token hand-off —
+   * so a session started from a token is indistinguishable from one started at
+   * the form, and neither can drift from the other.
+   *
+   * The employee code written here is `resp.username`, i.e. the code the *server*
+   * resolved the session user to. It is never the code the caller supplied: on
+   * the token path the caller supplies none at all, and on the form path the
+   * server's answer is the authoritative spelling.
+   *
+   * @param {object} resp the backend's `response` object (a LoginUser)
    */
-  const loginUser = useCallback(async (empCode, empPass) => {
-    const response = await apiLogin(empCode, empPass);
-    const data = response.data;
-
-    if (data.status_code !== 200) {
-      throw new Error('Login failed');
-    }
-
-    const resp = data.response;
+  const persistSession = useCallback((resp) => {
     if (resp.authorities[0].authority === 'UNAUTHORISED') {
       throw new Error('UNAUTHORISED');
     }
@@ -140,6 +147,65 @@ export function AuthProvider({ children }) {
   }, []);
 
   /**
+   * Perform login with an employee code and password.
+   */
+  const loginUser = useCallback(async (empCode, empPass) => {
+    const response = await apiLogin(empCode, empPass);
+    const data = response.data;
+
+    if (data.status_code !== API_STATUS.SUCCESS) {
+      throw new Error('Login failed');
+    }
+    return persistSession(data.response);
+  }, [persistSession]);
+
+  /**
+   * Sign in from the portal hand-off token: `/compliance/<token>`.
+   *
+   * The portal has already authenticated the employee and encrypted the employee
+   * code out of its session user into the token, so nothing is asked of the user
+   * here. Any session already in storage is replaced rather than merged — the
+   * portal may have been switched to a different employee since this browser last
+   * signed in, and the token is the newer statement of who is here.
+   *
+   * @param {string} token base64url token from the URL
+   */
+  const loginWithToken = useCallback(async (token) => {
+    if (!token) throw new Error('No portal token supplied.');
+
+    let data;
+    try {
+      const response = await apiLoginWithToken(token);
+      data = response.data;
+    } catch (err) {
+      // Worth telling apart. The backend answers HTTP 200 for every outcome it
+      // has an opinion about, so an HTTP status arriving here means the request
+      // never reached the handler at all — a 404 is a backend running an older
+      // build without /login/token, not an unreachable service. Reporting both
+      // as "could not reach" sends the next person to look at the network.
+      if (err?.response) {
+        throw new Error(
+          `The compliance service returned HTTP ${err.response.status} for the sign-in link.` +
+            (err.response.status === 404
+              ? ' The backend may be running a build without the /login/token endpoint.'
+              : '')
+        );
+      }
+      throw new Error('Could not reach the compliance service.');
+    }
+
+    if (data?.status_code === API_STATUS.INVALID_TOKEN) {
+      throw new Error(
+        'This sign-in link is no longer valid. Please open the Compliance Portal again from the RUCHA portal.'
+      );
+    }
+    if (data?.status_code !== API_STATUS.SUCCESS || !data.response) {
+      throw new Error('No active employee matches this sign-in link.');
+    }
+    return persistSession(data.response);
+  }, [persistSession]);
+
+  /**
    * Perform logout
    */
   const logoutUser = useCallback(async () => {
@@ -175,7 +241,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginUser, logoutUser }}>
+    <AuthContext.Provider value={{ user, loading, loginUser, loginWithToken, logoutUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -72,6 +72,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LS_KEYS, PORTAL_URL } from '../../utils/constants';
+import { homePathForUser } from '../../utils/roleRoutes';
 
 export default function LoginCheck() {
   const [searchParams] = useSearchParams();
@@ -160,14 +161,10 @@ export default function LoginCheck() {
     }
   };
 
+  // Shared with the portal token hand-off (pages/auth/TokenLogin) so both doors
+  // into the app agree on where each role lands.
   const redirectByUserRole = (user) => {
-    if (user.isCompAdmin)              navigate('/comp-admin/pending', { replace: true });
-    else if (user.isChd || user.isPlantHr) navigate('/plant-hr/pending', { replace: true });
-    else if (user.isCompHead)          navigate('/comp-head/pending', { replace: true });
-    else if (user.isCorpHr)            navigate('/corp-hr/pending', { replace: true });
-    else if (user.isHcmHead)           navigate('/hcm-head/pending', { replace: true });
-    else if (user.isAuthority)         navigate('/authority/pending', { replace: true });
-    else                               navigate('/access-denied', { replace: true });
+    navigate(homePathForUser(user), { replace: true });
   };
 
   return (

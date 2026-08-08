@@ -37,6 +37,7 @@ function RouteTitle() {
 
 // Auth pages
 import LoginCheck   from '../pages/auth/LoginCheck';
+import TokenLogin   from '../pages/auth/TokenLogin';
 import AccessDenied from '../pages/auth/AccessDenied';
 
 // Comp Admin
@@ -153,6 +154,15 @@ export default function AppRouter() {
 
         {/* Default redirect */}
         <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/*
+          Portal hand-off: /compliance/<token>. Declared last, but static paths
+          like /login outrank a dynamic segment in the router's own ranking, so
+          it only ever catches URLs nothing else claimed. A single segment that
+          is not token-shaped is bounced to /login by the component itself.
+        */}
+        <Route path="/:token" element={<TokenLogin />} />
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

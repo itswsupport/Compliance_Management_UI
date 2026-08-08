@@ -14,6 +14,23 @@ export const SESSION_CHECK_MS = 15 * 1000;
 
 export const PORTAL_URL = 'https://replportal.co.in:8443/portal/dashboard.jsp';
 
+// The router basename (see routes/AppRouter.jsx). Needed wherever a redirect has
+// to be a full page load rather than a router navigation, since window.location
+// is not basename-aware.
+export const APP_BASE_PATH = '/compliance';
+
+// Backend response codes (IResponseCode). The backend answers HTTP 200 for every
+// outcome — the real result is `status_code` in the body, so callers branch on
+// this and never on the HTTP status. SERVER_ERROR is 501, not 500.
+export const API_STATUS = {
+  SUCCESS: 200,
+  DATA_NOT_FOUND: 204,
+  UNAUTHORIZED: 401,
+  SERVER_ERROR: 501,
+  // A portal hand-off token that was expired, forged, or unreadable.
+  INVALID_TOKEN: 1011,
+};
+
 // Status codes used across compliance records
 export const STATUS = {
   SUBMISSION_PENDING: 0,
