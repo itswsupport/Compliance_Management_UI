@@ -14,7 +14,6 @@ export default function HcmHeadPending() {
       headerColor="card-header-pending"
       statusArray={[0, 22]}
       navCards={NAV}
-      viewPath="/hcm-head/view"
     />
   );
 }

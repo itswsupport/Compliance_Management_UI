@@ -15,7 +15,7 @@ export default function AuthorityPending() {
       headerColor="card-header-pending"
       statusArray={[0, 4]}
       navCards={NAV}
-      viewPath="/authority/view"
+      viewShowAction={false}
     />
   );
 }

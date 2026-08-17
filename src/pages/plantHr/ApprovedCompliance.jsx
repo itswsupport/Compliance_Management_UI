@@ -14,7 +14,6 @@ export default function PlantHrApproved() {
       headerColor="card-header-approved"
       statusArray={[1, 3]}
       navCards={NAV_CARDS}
-      viewPath="/plant-hr/view"
     />
   );
 }

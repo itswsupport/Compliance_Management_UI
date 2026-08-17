@@ -14,7 +14,6 @@ export default function CompHeadApproved() {
       headerColor="card-header-approved"
       statusArray={[1]}
       navCards={NAV}
-      viewPath="/comp-head/view"
     />
   );
 }

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
 import { useShowBackButton } from '../../hooks/useShowBackButton';
+import { markComplianceRead } from '../../components/layout/NotificationBell';
 import {
   getComplianceById, getActionHistory, saveComplianceAction, getDownloadUrl,
 } from '../../services/complianceService';
@@ -47,10 +48,21 @@ function actionHistoryStatus(status) {
 // Matches the DB comment column width (500) — keep the two in sync.
 const COMMENT_MAX = 500;
 
-export default function ComplianceView({ showAction = false }) {
+/**
+ * Props:
+ *   showAction — render the action form when this user has a pending row
+ *   embedded   — rendered inside a dashboard card (ComplianceListPage) instead of
+ *                on its own route: drops the page title row / Back button, since
+ *                the host card supplies both
+ *   onBack     — where "back" goes in embedded mode (defaults to history back)
+ */
+export default function ComplianceView({ showAction = false, embedded = false, onBack }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const showBack = useShowBackButton();
+  // Set by the navbar bell: the dashboard this record belongs to. Arriving that
+  // way there may be no history to go back to, so Back is always offered.
+  const backTo = useLocation().state?.backTo;
+  const showBack = useShowBackButton() || Boolean(backTo);
 
   const [comp, setComp] = useState(null);
   const [history, setHistory] = useState([]);
@@ -82,6 +94,17 @@ export default function ComplianceView({ showAction = false }) {
     return pendingRowAuthLevel;
   }, [pendingRowAuthLevel, userLevel]);
 
+  // Embedded: hand control back to the host card. Standalone: history back.
+  // `changed` tells the host whether anything was actually saved — a plain
+  // "back" after only reading the record should not cost it a list refetch.
+  const goBack = useCallback((changed = false) => {
+    if (onBack) onBack(changed);
+    // Opened from the navbar bell, which says which dashboard to return to.
+    // navigate(-1) would land wherever the user happened to be instead.
+    else if (backTo) navigate(backTo, { replace: true });
+    else navigate(-1);
+  }, [onBack, navigate, backTo]);
+
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -91,21 +114,23 @@ export default function ComplianceView({ showAction = false }) {
         const c = res.data.response;
         setComp(c);
         localStorage.setItem(LS_KEYS.ID_COMP, c.id);
+        // Reading the record IS reading its notification, however it was opened.
+        markComplianceRead(user?.empCode ?? globalEmpCode, c.id);
 
         const hRes = await getActionHistory(c.id);
         const actions = hRes.data?.response || [];
         setHistory(actions);
         checkPendingStatus(actions);
       } else {
-        navigate(-1);
+        goBack();
       }
     } catch (err) {
       console.error(err);
-      navigate(-1);
+      goBack();
     } finally {
       setLoading(false);
     }
-  }, [id, navigate]);
+  }, [id, goBack]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -188,7 +213,7 @@ export default function ComplianceView({ showAction = false }) {
           displayMessage = displayMessage.toLowerCase().replace(/(^\w|\s\w)/g, (m) => m.toUpperCase());
         }
         await Swal.fire({ title: displayMessage, icon: 'success', timer: 2000, showConfirmButton: false });
-        navigate(-1);
+        goBack(true);
       } else {
         let displayMessage = obj.message || '';
         if (displayMessage === displayMessage.toUpperCase()) {
@@ -237,26 +262,28 @@ export default function ComplianceView({ showAction = false }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-[#3482AE] font-bold text-sm uppercase tracking-wider">
-          Compliance View
-        </h1>
-        {showBack && (
-          <button
-            onClick={() => navigate(-1)}
-            className="back-button"
-          >
-            <i className="fas fa-chevron-left" /> Back
-          </button>
-        )}
-      </div>
+      {!embedded && (
+        <div className="flex items-center justify-between">
+          <h1 className="text-[#3482AE] font-bold text-sm uppercase tracking-wider">
+            Compliance View
+          </h1>
+          {showBack && (
+            <button
+              onClick={() => goBack()}
+              className="back-button"
+            >
+              <i className="fas fa-chevron-left" /> Back
+            </button>
+          )}
+        </div>
+      )}
 
       <input type="hidden" id="mst_id" value={comp.id} />
 
       {/* 1. Compliance Act Details */}
-      <div className="bg-white rounded border border-gray-200">
-        <div className="px-5 py-3 border-b border-gray-200">
-          <h3 className="text-[#3482AE] font-bold text-xs uppercase tracking-wider">1.COMPLIANCE ACT DETAILS</h3>
+      <div className="card">
+        <div className="card-header-primary">
+          <h3><i className="fas fa-tasks" /> 1.COMPLIANCE ACT DETAILS</h3>
         </div>
         <div className="p-5">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-5 gap-y-4">
@@ -322,9 +349,9 @@ export default function ComplianceView({ showAction = false }) {
       </div>
 
       {/* 2. Action History */}
-      <div className="bg-white rounded border border-gray-200" id="action_history">
-        <div className="px-5 py-3 border-b border-gray-200">
-          <h3 className="text-[#3482AE] font-bold text-xs uppercase tracking-wider">2.ACTION HISTORY</h3>
+      <div className="card" id="action_history">
+        <div className="card-header-primary">
+          <h3><i className="fas fa-tasks" /> 2.ACTION HISTORY</h3>
         </div>
         <div className="p-5 overflow-x-auto">
           <table className="data-table" id="complianceActionHistory">
@@ -376,9 +403,9 @@ export default function ComplianceView({ showAction = false }) {
 
       {/* 3. Action section */}
       {showAction && showActionCard && pendingRowStatus !== null && (
-        <div className="bg-white rounded border border-gray-200" id="comp_admin_action_card_div">
-          <div className="px-5 py-3 border-b border-gray-200">
-            <h3 className="text-[#3482AE] font-bold text-xs uppercase tracking-wider">3.ACTION</h3>
+        <div className="card" id="comp_admin_action_card_div">
+          <div className="card-header-primary">
+            <h3><i className="fas fa-tasks" /> 3.ACTION</h3>
           </div>
           <div className="p-5">
             {isSubmitForm ? (
@@ -481,7 +508,7 @@ export default function ComplianceView({ showAction = false }) {
                 {submitting ? <span className="loading-spinner h-3 w-3" /> : 'SUBMIT'}
               </button>
               <button
-                onClick={() => navigate(-1)}
+                onClick={() => goBack()}
                 className="bg-[#D9534F] hover:bg-[#c9302c] text-white px-5 py-1.5 rounded text-xs font-bold uppercase tracking-wider min-w-[80px]"
               >
                 CANCEL

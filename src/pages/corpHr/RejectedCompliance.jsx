@@ -14,7 +14,6 @@ export default function CorpHrRejected() {
       headerColor="card-header-rejected"
       statusArray={[2]}
       navCards={NAV}
-      viewPath="/corp-hr/view"
     />
   );
 }

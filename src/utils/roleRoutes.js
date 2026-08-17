@@ -13,12 +13,25 @@
  */
 export function homePathForUser(user) {
   if (!user) return '/access-denied';
-  if (user.isCompAdmin) return '/comp-admin/pending';
+  // Comp Admin opens on Overdue, whose page leads with the Compliance Calendar.
+  if (user.isCompAdmin) return '/comp-admin/overdue';
   if (user.isChd || user.isPlantHr) return '/plant-hr/pending';
   if (user.isCompHead) return '/comp-head/pending';
   if (user.isCorpHr) return '/corp-hr/pending';
   if (user.isHcmHead) return '/hcm-head/pending';
   if (user.isAuthority) return '/authority/pending';
+  return '/access-denied';
+}
+
+// Where a compliance opens for this role — same order as homePathForUser.
+export function viewPathForUser(user) {
+  if (!user) return '/access-denied';
+  if (user.isCompAdmin) return '/comp-admin/view';
+  if (user.isChd || user.isPlantHr) return '/plant-hr/view';
+  if (user.isCompHead) return '/comp-head/view';
+  if (user.isCorpHr) return '/corp-hr/view';
+  if (user.isHcmHead) return '/hcm-head/view';
+  if (user.isAuthority) return '/authority/view';
   return '/access-denied';
 }
 

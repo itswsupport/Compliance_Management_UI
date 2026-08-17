@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
  *   placeholder – text shown when nothing selected
  *   disabled    – disables the control
  *   className   – extra class on the wrapper
+ *   maxHeight   – tallest the dropdown panel may get, in px, before it scrolls
  */
 export default function SearchableSelect({
   id,
@@ -23,6 +24,7 @@ export default function SearchableSelect({
   searchable = true,
   buttonClassName = '',
   optionClassName = 'text-gray-400',
+  maxHeight = 260,
 }) {
   const [open, setOpen]   = useState(false);
   const [query, setQuery] = useState('');
@@ -115,10 +117,12 @@ export default function SearchableSelect({
           style={{
             top: rect.top + 2,
             left: rect.left,
-            minWidth: rect.width,
-            width: 'max-content',
-            maxWidth: '90vw',
-            maxHeight: '260px',
+            // Exactly the trigger's width. It used to be max-content up to 90vw,
+            // so one long option — "FIRE NOC RENEWAL / FORM B SUBMISSION (…)" —
+            // stretched the panel past the right edge and gave the whole page a
+            // horizontal scrollbar. Long labels wrap inside instead.
+            width: rect.width,
+            maxHeight: `${maxHeight}px`,
             display: 'flex',
             flexDirection: 'column'
           }}
@@ -143,7 +147,7 @@ export default function SearchableSelect({
           )}
 
           {/* Options list */}
-          <div style={{ overflowY: 'auto', flex: 1 }}>
+          <div className="dropdown-scroll" style={{ overflowY: 'auto', flex: 1 }}>
             {filtered.length === 0 ? (
               <div className="px-3 py-2 text-gray-400 text-center uppercase" style={{ fontSize: '12px' }}>
                 No results found
@@ -153,10 +157,11 @@ export default function SearchableSelect({
                   <div
                     key={`${opt.value}__${i}`}
                     onClick={() => handleSelect(opt)}
-                    className={`px-3 py-1.5 cursor-pointer uppercase whitespace-nowrap ${optionClassName} hover:bg-[#007BFF] hover:text-white ${
+                    className={`px-3 py-1.5 cursor-pointer uppercase break-words leading-snug ${optionClassName} hover:bg-[#007BFF] hover:text-white ${
                       String(opt.value) === String(value) ? 'font-semibold' : ''
                     }`}
                     style={{ fontSize: '11px' }}
+                    title={opt.label}
                   >
                     {opt.label}
                   </div>

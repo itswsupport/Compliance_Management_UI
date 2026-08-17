@@ -8,7 +8,9 @@ const NAV_ITEMS = [
     id: 'comp_admin',
     label: 'Comp Admin Dashboard',
     icon: 'fas fa-tachometer-alt',
-    to: '/comp-admin/pending',
+    // Overdue, matching where login lands (utils/roleRoutes) — it is the page
+    // that leads with the Compliance Calendar.
+    to: '/comp-admin/overdue',
     show: (u) => u.isCompAdmin,
   },
   {
@@ -50,7 +52,7 @@ const NAV_ITEMS = [
     id: 'admin_settings',
     label: 'Admin Settings',
     icon: 'fas fa-wrench',
-    to: '/admin/act-type',
+    to: '/admin',
     show: (u) => u.isCompAdmin,
   },
 ];

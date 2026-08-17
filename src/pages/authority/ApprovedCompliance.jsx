@@ -15,7 +15,7 @@ export default function AuthorityApproved() {
       headerColor="card-header-approved"
       statusArray={[1, 22]}
       navCards={NAV}
-      viewPath="/authority/view"
+      viewShowAction={false}
     />
   );
 }

@@ -24,7 +24,7 @@ function RouteTitle() {
   useEffect(() => {
     const path = location.pathname;
     let name;
-    if (path.includes('/admin/')) {
+    if (path.includes('/admin')) {
       name = 'Admin Settings';
     } else {
       const seg = path.split('/').filter(Boolean).pop() || '';
@@ -148,6 +148,10 @@ export default function AppRouter() {
         <Route path="/authority/view"     element={<ProtectedRoute><AuthorityView /></ProtectedRoute>} />
 
         {/* Admin Settings */}
+        {/* Admin Settings opens on the first section; the nav cards sit above
+            its table, so there is no separate cards-only landing. */}
+        {/* Renders the first section rather than redirecting — a <Navigate> here drew a blank frame. */}
+        <Route path="/admin"              element={<ProtectedRoute><ActTypeMaster /></ProtectedRoute>} />
         <Route path="/admin/act-type"     element={<ProtectedRoute><ActTypeMaster /></ProtectedRoute>} />
         <Route path="/admin/act-sub-type" element={<ProtectedRoute><ActSubTypeMaster /></ProtectedRoute>} />
         <Route path="/admin/login-access" element={<ProtectedRoute><LoginAccessMaster /></ProtectedRoute>} />

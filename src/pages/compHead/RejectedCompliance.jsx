@@ -14,7 +14,6 @@ export default function CompHeadRejected() {
       headerColor="card-header-rejected"
       statusArray={[2]}
       navCards={NAV}
-      viewPath="/comp-head/view"
     />
   );
 }

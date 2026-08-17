@@ -14,7 +14,6 @@ export default function PlantHrOverdue() {
       headerColor="card-header-overdue"
       statusArray={[0, 5]}
       navCards={NAV_CARDS}
-      viewPath="/plant-hr/view"
     />
   );
 }

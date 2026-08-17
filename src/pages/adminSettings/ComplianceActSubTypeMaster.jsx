@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { useShowBackButton } from '../../hooks/useShowBackButton';
+import AdminNavCards from '../../components/ui/AdminNavCards';
 import DataTable from '../../components/ui/DataTable';
+import Modal from '../../components/ui/Modal';
 import SearchableSelect from '../../components/ui/SearchableSelect';
 import {
   getActTypeList, getActSubTypeList, saveActSubType, deleteActSubType,
@@ -10,8 +10,6 @@ import {
 import { getFlowName } from '../../utils/formatters';
 
 export default function ComplianceActSubTypeMaster() {
-  const navigate = useNavigate();
-  const showBack = useShowBackButton();
   const [data, setData]         = useState([]);
   const [actTypes, setActTypes] = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -19,8 +17,48 @@ export default function ComplianceActSubTypeMaster() {
   const [form, setForm] = useState({
     complianceActType: '', complianceActSubType: '', approvalFlowStatus: '',
   });
-  const [formOpen, setFormOpen] = useState(true);
-  const [listOpen, setListOpen] = useState(true);
+  // The page opens on the list alone — the add form is revealed by the
+  // "Add …" button in the list header.
+  const [formOpen, setFormOpen] = useState(false);
+  // Validation messages shown inline in the popup — no separate alert dialog.
+  const [errors, setErrors] = useState({});
+
+  // null = the popup is adding; an id = it is editing that row.
+  const [editId, setEditId] = useState(null);
+
+  const EMPTY_FORM = {
+    complianceActType: '', complianceActSubType: '', approvalFlowStatus: '',
+  };
+
+  function openForm() {
+    setEditId(null);
+    setForm(EMPTY_FORM);
+    setErrors({});
+    setFormOpen(true);
+  }
+
+  function openEdit(row) {
+    setEditId(row.id);
+    setForm({
+      complianceActType: row.complianceActType || '',
+      complianceActSubType: row.complianceActSubType || '',
+      approvalFlowStatus: row.approvalFlowStatus || '',
+    });
+    setErrors({});
+    setFormOpen(true);
+  }
+
+  function closeForm() {
+    setFormOpen(false);
+    setEditId(null);
+    setForm(EMPTY_FORM);
+    setErrors({});
+  }
+
+  function setField(name, value) {
+    setForm((f) => ({ ...f, [name]: value }));
+    setErrors((e) => ({ ...e, [name]: '' }));
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -34,29 +72,75 @@ export default function ComplianceActSubTypeMaster() {
   useEffect(() => { load(); }, [load]);
 
   function validate() {
-    return Boolean(form.complianceActType && form.complianceActSubType && form.approvalFlowStatus);
+    const e = {};
+    if (!form.complianceActType)              e.complianceActType = 'Please select compliance category';
+    if (!form.complianceActSubType.trim())    e.complianceActSubType = 'Please enter compliance subcategory';
+    if (!form.approvalFlowStatus)             e.approvalFlowStatus = 'Please select approval flow';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   }
 
+  // Compare ignoring case and extra spaces.
+  const normalise = (s) => (s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+
   async function handleSave() {
-    if (!validate()) {
+    if (!validate()) return;
+    // Duplicate = same category AND subcategory. Skip the row being edited.
+    const clash = data.some(
+      (r) => r.id !== editId
+        && normalise(r.complianceActType) === normalise(form.complianceActType)
+        && normalise(r.complianceActSubType) === normalise(form.complianceActSubType),
+    );
+    if (clash) {
       await Swal.fire({
-        title: 'Please Fill Above Fields To Save Details',
-        icon: 'warning', timer: 5000, confirmButtonColor: '#42ba96',
+        title: 'This Compliance Act Subcategory Already Exists',
+        icon: 'warning',
+        confirmButtonColor: '#3482AE',
       });
       return;
     }
+    // Capture before closing — closeForm() resets the form.
+    const { complianceActType, complianceActSubType, approvalFlowStatus } = form;
+    const id = editId;
+    // The popup goes away the moment Submit is accepted; the outcome is
+    // reported by the dialog that follows.
+    closeForm();
+
     setSaving(true);
     try {
-      const res = await saveActSubType(form.complianceActType, form.complianceActSubType, form.approvalFlowStatus);
+      const res = await saveActSubType(
+        complianceActType, complianceActSubType, approvalFlowStatus, id,
+      );
       const obj = res.data;
-      if (obj.status_code === 200) {
-        await Swal.fire({ title: obj.message, icon: 'success', timer: 2000, showConfirmButton: false });
-        setForm({ complianceActType: '', complianceActSubType: '', approvalFlowStatus: '' });
-        load();
-      } else {
-        await Swal.fire({ title: obj.message, icon: 'error', timer: 3000 });
-      }
-    } finally { setSaving(false); }
+      await reportSave(obj.status_code === 200, obj.message, id);
+    } catch (err) {
+      // The server can answer a rejection with a non-2xx status, which axios
+      // throws. Its body still carries the reason — show that, never a raw error.
+      await reportSave(false, err?.response?.data?.message, id);
+    } finally {
+      setSaving(false);
+      load();
+    }
+  }
+
+  async function reportSave(ok, message, isEdit) {
+    const duplicate = /already\s*exist/i.test(message || '');
+    let title;
+    if (duplicate) {
+      title = 'This Compliance Act Subcategory Already Exists';
+    } else if (ok) {
+      // The endpoint is shared by insert and update, so its message always reads
+      // "Inserted Successfully" — say "Updated" ourselves when editing.
+      title = isEdit ? 'Compliance Act Subcategory Updated Successfully' : (message || 'Saved Successfully');
+    } else {
+      title = message || 'Could not save. Please try again.';
+    }
+    await Swal.fire({
+      title,
+      icon: ok ? 'success' : 'warning',
+      timer: ok ? 1500 : 3000,
+      showConfirmButton: false,
+    });
   }
 
   async function handleDelete(id) {
@@ -77,7 +161,7 @@ export default function ComplianceActSubTypeMaster() {
   }
 
   const columns = [
-    { label: 'SR.NO', filterable: false, render: (_, i) => i + 1 },
+    { label: 'SR.NO', filterable: false, width: 80, render: (_, i) => i + 1 },
     { key: 'complianceActType',    label: 'COMPLIANCE ACT CATEGORY' },
     { key: 'complianceActSubType', label: 'COMPLIANCE ACT SUBCATEGORY' },
     {
@@ -85,138 +169,109 @@ export default function ComplianceActSubTypeMaster() {
       render: (row) => getFlowName(row.approvalFlowStatus),
     },
     {
-      label: 'ACTION', filterable: false,
+      label: 'ACTION', filterable: false, width: 160,
       render: (row) => (
-        <button onClick={() => handleDelete(row.id)} className="btn-danger btn-sm btn" style={{ padding: '4px 8px' }}>
-          <i className="fas fa-trash" />
-        </button>
+        <div className="flex items-center justify-center gap-4 w-full h-full">
+          <button onClick={() => openEdit(row)} className="btn-primary btn-sm btn" style={{ padding: '4px 8px' }} title="Edit">
+            <i className="fas fa-pen" />
+          </button>
+          <button onClick={() => handleDelete(row.id)} className="btn-danger btn-sm btn" style={{ padding: '4px 8px' }} title="Delete">
+            <i className="fas fa-trash" />
+          </button>
+        </div>
       ),
     },
   ];
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between no-print">
-        <h1 className="section-title">
-          Admin Settings
-        </h1>
-        {showBack && (
-          <button
-            onClick={() => navigate(-1)}
-            className="back-button"
-          >
-            <i className="fas fa-chevron-left" /> Back
-          </button>
-        )}
-      </div>
+      <h1 className="section-title no-print">
+        Admin Settings
+      </h1>
 
-      {/* Large Navigation Tab Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 select-none no-print">
-        <button
-          onClick={() => navigate('/admin/act-type')}
-          className="nav-card-btn"
-        >
-          <i className="fas fa-plus fa-lg text-white" />
-          <span>Add Compliance Act Category</span>
-        </button>
-        <button
-          onClick={() => navigate('/admin/act-sub-type')}
-          className="nav-card-btn"
-        >
-          <i className="fas fa-plus fa-lg text-white" />
-          <span>Add Compliance Act Subcategory</span>
-        </button>
-        <button
-          onClick={() => navigate('/admin/login-access')}
-          className="nav-card-btn"
-        >
-          <i className="fas fa-plus fa-lg text-white" />
-          <span>Add Login Access</span>
-        </button>
-      </div>
+      <AdminNavCards />
 
-      {/* Add form */}
-      <div className="card no-print">
-        <div 
-          className="custom-card-header flex items-center justify-between cursor-pointer select-none"
-          onClick={() => setFormOpen(!formOpen)}
-        >
-          <h3>1. Add Compliance Act Subcategory</h3>
-          <i className={`fas ${formOpen ? 'fa-angle-double-down' : 'fa-angle-double-up'} text-xs`} />
+      {/* Add / Edit form — popup opened by "Add …" in the list header, or by
+          the Edit action on a row. */}
+      <Modal
+        isOpen={formOpen}
+        onClose={closeForm}
+        title={editId ? 'Edit Compliance Act Subcategory' : 'Add Compliance Act Subcategory'}
+        size="md"
+      >
+      <div className="grid grid-cols-1 gap-4">
+        <div className="form-group mb-0">
+          <label className="form-label">Compliance Category <span className="text-red-500 font-bold">*</span></label>
+          <SearchableSelect
+            id="sel_comp_act_type_list"
+            value={form.complianceActType}
+            onChange={(v) => setField('complianceActType', v)}
+            placeholder="Select Compliance Category"
+            optionClassName="text-gray-800"
+            options={actTypes.map((a) => ({
+              value: a.complianceActType,
+              label: a.complianceActType,
+            }))}
+          />
+          {errors.complianceActType && <p className="form-error">{errors.complianceActType}</p>}
         </div>
-        <div className={`card-collapse-container ${formOpen ? 'open' : ''}`}>
-          <div className="p-5">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-5 gap-y-4">
-              <div className="form-group mb-0">
-                <label className="form-label">Compliance Category <span className="text-red-500 font-bold">*</span></label>
-                <SearchableSelect
-                  id="sel_comp_act_type_list"
-                  value={form.complianceActType}
-                  onChange={(v) => setForm((f) => ({ ...f, complianceActType: v }))}
-                  placeholder="Select Compliance Category"
-                  optionClassName="text-gray-800"
-                  options={actTypes.map((a) => ({
-                    value: a.complianceActType,
-                    label: a.complianceActType,
-                  }))}
-                />
-              </div>
-              <div className="form-group mb-0">
-                <label className="form-label">Compliance Subcategory <span className="text-red-500 font-bold">*</span></label>
-                <input
-                  id="comp_act_desc"
-                  className="form-input bg-white"
-                  value={form.complianceActSubType}
-                  onChange={(e) => setForm((f) => ({ ...f, complianceActSubType: e.target.value }))}
-                  placeholder="Enter subcategory"
-                />
-              </div>
-              <div className="form-group mb-0">
-                <label className="form-label">Approval Flow <span className="text-red-500 font-bold">*</span></label>
-                <SearchableSelect
-                  id="sel_comp_act_flow"
-                  value={form.approvalFlowStatus}
-                  onChange={(v) => setForm((f) => ({ ...f, approvalFlowStatus: v }))}
-                  placeholder="Select Flow"
-                  searchable={false}
-                  optionClassName="text-gray-800"
-                  options={[
-                    { value: 'PHR', label: 'Plant HR' },
-                    { value: 'CA', label: 'Compliance Admin' },
-                  ]}
-                />
-              </div>
-            </div>
-            <div className="flex justify-center mt-5">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="btn text-white bg-[#3482AE] hover:bg-[#2A6B91] px-5 py-1.5 rounded uppercase font-bold text-xs border-0 cursor-pointer flex items-center justify-center gap-1.5 min-w-24"
-              >
-                {saving ? (
-                  <><span className="loading-spinner" /> Saving…</>
-                ) : (
-                  <><i className="fa fa-save" /> Submit</>
-                )}
-              </button>
-            </div>
-          </div>
+        <div className="form-group mb-0">
+          <label className="form-label">Compliance Subcategory <span className="text-red-500 font-bold">*</span></label>
+          <input
+            id="comp_act_desc"
+            className="form-input bg-white"
+            value={form.complianceActSubType}
+            onChange={(e) => setField('complianceActSubType', e.target.value)}
+            placeholder="Enter subcategory"
+          />
+          {errors.complianceActSubType && <p className="form-error">{errors.complianceActSubType}</p>}
+        </div>
+        <div className="form-group mb-0">
+          <label className="form-label">Approval Flow <span className="text-red-500 font-bold">*</span></label>
+          <SearchableSelect
+            id="sel_comp_act_flow"
+            value={form.approvalFlowStatus}
+            onChange={(v) => setField('approvalFlowStatus', v)}
+            placeholder="Select Flow"
+            searchable={false}
+            optionClassName="text-gray-800"
+            options={[
+              { value: 'PHR', label: 'Plant HR' },
+              { value: 'CA', label: 'Compliance Admin' },
+            ]}
+          />
+          {errors.approvalFlowStatus && <p className="form-error">{errors.approvalFlowStatus}</p>}
         </div>
       </div>
+      <div className="flex justify-center mt-5">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="btn text-white bg-[#3482AE] hover:bg-[#2A6B91] px-5 py-1.5 rounded uppercase font-bold text-xs border-0 cursor-pointer flex items-center justify-center gap-1.5 min-w-24"
+        >
+          {saving ? (
+            <><span className="loading-spinner" /> Saving…</>
+          ) : (
+            <><i className="fa fa-save" /> Submit</>
+          )}
+        </button>
+      </div>
+      </Modal>
 
       {/* List table */}
       <div className="card">
-        <div
-          className="custom-card-header flex items-center justify-between cursor-pointer select-none no-print"
-          onClick={() => setListOpen(!listOpen)}
-        >
-          <h3>2. Compliance Act Subcategory Details</h3>
-          <i className={`fas ${listOpen ? 'fa-angle-double-down' : 'fa-angle-double-up'} text-xs`} />
+        <div className="custom-card-header flex items-center justify-between select-none no-print">
+          <h3>Compliance Act Subcategory Details</h3>
+          <button
+            onClick={openForm}
+            className="add-record-btn"
+            title="Add Compliance Act Subcategory"
+          >
+            <i className="fas fa-plus" /> Add
+          </button>
         </div>
-        <div className={`card-collapse-container ${listOpen ? 'open' : ''}`}>
-          <div className="p-4 md:p-5">
-            <DataTable columns={columns} data={data} loading={loading} reportTitle="Compliance Act Subcategory List" />
-          </div>
+        <div className="p-4 md:p-5">
+          <DataTable columns={columns} data={data} loading={loading} reportTitle="Compliance Act Subcategory List" />
         </div>
       </div>
     </div>

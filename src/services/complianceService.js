@@ -1,4 +1,4 @@
-import api from './api';
+import api, { NO_TIMEOUT } from './api';
 import { LS_KEYS } from '../utils/constants';
 
 /**
@@ -11,7 +11,7 @@ export const getComplianceList = (empCode, statusArray) => {
   if (Array.isArray(statusArray)) {
     statusArray.forEach((s) => params.append('status[]', s));
   }
-  return api.get(`compliance/pending/list?${params.toString()}`);
+  return api.get(`compliance/pending/list?${params.toString()}`, NO_TIMEOUT);
 };
 
 /**
@@ -26,7 +26,7 @@ export const getPhrComplianceList = (mstStatus, empCode, level, statusArray) => 
   if (Array.isArray(statusArray)) {
     statusArray.forEach((s) => params.append('status[]', s));
   }
-  return api.get(`phr/compliance/list?${params.toString()}`);
+  return api.get(`phr/compliance/list?${params.toString()}`, NO_TIMEOUT);
 };
 
 /**
@@ -40,7 +40,7 @@ export const getUserComplianceList = (empCode, level, statusArray) => {
   if (Array.isArray(statusArray)) {
     statusArray.forEach((s) => params.append('status[]', s));
   }
-  return api.get(`user/compliance/list?${params.toString()}`);
+  return api.get(`user/compliance/list?${params.toString()}`, NO_TIMEOUT);
 };
 
 /**
@@ -52,7 +52,7 @@ export const getAuthorityComplianceList = (statusArray) => {
   if (Array.isArray(statusArray)) {
     statusArray.forEach((s) => params.append('status[]', s));
   }
-  return api.get(`authority/compliance/list?${params.toString()}`);
+  return api.get(`authority/compliance/list?${params.toString()}`, NO_TIMEOUT);
 };
 
 /**

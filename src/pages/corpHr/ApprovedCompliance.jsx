@@ -14,7 +14,6 @@ export default function CorpHrApproved() {
       headerColor="card-header-approved"
       statusArray={[1]}
       navCards={NAV}
-      viewPath="/corp-hr/view"
     />
   );
 }

@@ -14,7 +14,6 @@ export default function PlantHrPending() {
       headerColor="card-header-pending"
       statusArray={[0, 3, 4, 11, 2]}
       navCards={NAV_CARDS}
-      viewPath="/plant-hr/view"
     />
   );
 }

@@ -14,7 +14,6 @@ export default function HcmHeadRejected() {
       headerColor="card-header-rejected"
       statusArray={[2]}
       navCards={NAV}
-      viewPath="/hcm-head/view"
     />
   );
 }

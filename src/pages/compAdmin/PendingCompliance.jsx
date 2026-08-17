@@ -16,7 +16,6 @@ export default function CompAdminPending() {
       statusArray={[0, 3, 4, 11, 2]}
       navCards={NAV_CARDS}
       showDelete={true}
-      viewPath="/comp-admin/view"
     />
   );
 }

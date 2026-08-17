@@ -1,19 +1,43 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { useShowBackButton } from '../../hooks/useShowBackButton';
+import AdminNavCards from '../../components/ui/AdminNavCards';
 import DataTable from '../../components/ui/DataTable';
+import Modal from '../../components/ui/Modal';
 import { getActTypeList, saveActType, deleteActType } from '../../services/adminService';
 
 export default function ComplianceActTypeMaster() {
-  const navigate = useNavigate();
-  const showBack = useShowBackButton();
   const [data, setData]       = useState([]);
   const [loading, setLoading] = useState(true);
   const [newType, setNewType] = useState('');
   const [saving, setSaving]   = useState(false);
-  const [formOpen, setFormOpen] = useState(true);
-  const [listOpen, setListOpen] = useState(true);
+  // The page opens on the list alone — the add form is revealed by the
+  // "Add …" button in the list header.
+  const [formOpen, setFormOpen] = useState(false);
+  // Validation message shown inline in the popup — no separate alert dialog.
+  const [error, setError] = useState('');
+  // null = the popup is adding; an id = it is editing that row.
+  const [editId, setEditId] = useState(null);
+
+  function openForm() {
+    setEditId(null);
+    setNewType('');
+    setError('');
+    setFormOpen(true);
+  }
+
+  function openEdit(row) {
+    setEditId(row.id);
+    setNewType(row.complianceActType || '');
+    setError('');
+    setFormOpen(true);
+  }
+
+  function closeForm() {
+    setFormOpen(false);
+    setEditId(null);
+    setNewType('');
+    setError('');
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -25,26 +49,67 @@ export default function ComplianceActTypeMaster() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Compare ignoring case and extra spaces.
+  const normalise = (s) => (s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+
   async function handleSave() {
     if (!newType.trim()) {
+      setError('Please enter compliance act category to save');
+      return;
+    }
+    // The server allows duplicates, so block them here. Skip the row being edited.
+    const clash = data.some(
+      (r) => r.id !== editId && normalise(r.complianceActType) === normalise(newType),
+    );
+    if (clash) {
       await Swal.fire({
-        title: 'Please Enter Compliance Act Type To Save',
-        icon: 'warning', timer: 5000, confirmButtonColor: '#42ba96',
+        title: 'This Compliance Act Category Already Exists',
+        // text: 'Please enter a different category.',
+        icon: 'warning',
+        confirmButtonColor: '#3482AE',
       });
       return;
     }
+    // Capture before closing — closeForm() resets both.
+    const value = newType.trim();
+    const id = editId;
+    // The popup goes away the moment Submit is accepted; the outcome is
+    // reported by the dialog that follows.
+    closeForm();
+
     setSaving(true);
     try {
-      const res = await saveActType(newType.trim());
+      const res = await saveActType(value, id);
       const obj = res.data;
-      if (obj.status_code === 200) {
-        await Swal.fire({ title: obj.message, icon: 'success', timer: 2000, showConfirmButton: false });
-        setNewType('');
-        load();
-      } else {
-        await Swal.fire({ title: obj.message, icon: 'error', timer: 3000 });
-      }
-    } finally { setSaving(false); }
+      await reportSave(obj.status_code === 200, obj.message, id);
+    } catch (err) {
+      // The server can answer a rejection with a non-2xx status, which axios
+      // throws. Its body still carries the reason — show that, never a raw error.
+      await reportSave(false, err?.response?.data?.message, id);
+    } finally {
+      setSaving(false);
+      load();
+    }
+  }
+
+  async function reportSave(ok, message, isEdit) {
+    const duplicate = /already\s*exist/i.test(message || '');
+    let title;
+    if (duplicate) {
+      title = 'This Compliance Act Category Already Exists';
+    } else if (ok) {
+      // The endpoint is shared by insert and update, so its message always reads
+      // "Inserted Successfully" — say "Updated" ourselves when editing.
+      title = isEdit ? 'Compliance Act Category Updated Successfully' : (message || 'Saved Successfully');
+    } else {
+      title = message || 'Could not save. Please try again.';
+    }
+    await Swal.fire({
+      title,
+      icon: ok ? 'success' : 'warning',
+      timer: ok ? 1500 : 3000,
+      showConfirmButton: false,
+    });
   }
 
   async function handleDelete(id) {
@@ -67,110 +132,79 @@ export default function ComplianceActTypeMaster() {
   }
 
   const columns = [
-    { label: 'SR.NO', filterable: false, render: (_, i) => i + 1 },
+    { label: 'SR.NO', filterable: false, width: 80, render: (_, i) => i + 1 },
     { key: 'complianceActType', label: 'COMPLIANCE ACT CATEGORY' },
     {
-      label: 'ACTION', filterable: false,
+      label: 'ACTION', filterable: false, width: 160,
       render: (row) => (
-        <button onClick={() => handleDelete(row.id)} className="btn-danger btn-sm btn" style={{ padding: '4px 8px' }}>
-          <i className="fas fa-trash" />
-        </button>
+        <div className="flex items-center justify-center gap-4 w-full h-full">
+          <button onClick={() => openEdit(row)} className="btn-primary btn-sm btn" style={{ padding: '4px 8px' }} title="Edit">
+            <i className="fas fa-pen" />
+          </button>
+          <button onClick={() => handleDelete(row.id)} className="btn-danger btn-sm btn" style={{ padding: '4px 8px' }} title="Delete">
+            <i className="fas fa-trash" />
+          </button>
+        </div>
       ),
     },
   ];
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between no-print">
-        <h1 className="section-title">
-          Admin Settings
-        </h1>
-        {showBack && (
+      <h1 className="section-title no-print">
+        Admin Settings
+      </h1>
+
+      <AdminNavCards />
+
+      {/* Add / Edit form — popup opened by "Add …" in the list header, or by
+          the Edit action on a row. */}
+      <Modal
+        isOpen={formOpen}
+        onClose={closeForm}
+        title={editId ? 'Edit Compliance Act Category' : 'Add Compliance Act Category'}
+        size="md"
+      >
+        <div className="form-group mb-0">
+          <label className="form-label">Enter Compliance Act Category <span className="text-red-500 font-bold">*</span></label>
+          <input
+            id="comp_act_type"
+            className="form-input bg-white w-full"
+            value={newType}
+            onChange={(e) => { setNewType(e.target.value); setError(''); }}
+            placeholder="Enter compliance act category"
+          />
+          {error && <p className="form-error">{error}</p>}
+        </div>
+        <div className="flex justify-center mt-5">
           <button
-            onClick={() => navigate(-1)}
-            className="back-button"
+            onClick={handleSave}
+            disabled={saving}
+            className="btn text-white bg-[#3482AE] hover:bg-[#2A6B91] px-5 py-1.5 rounded uppercase font-bold text-xs border-0 cursor-pointer flex items-center justify-center gap-1.5 min-w-24"
           >
-            <i className="fas fa-chevron-left" /> Back
+            {saving ? (
+              <><span className="loading-spinner" /> Saving…</>
+            ) : (
+              <><i className="fa fa-save" /> Submit</>
+            )}
           </button>
-        )}
-      </div>
-
-      {/* Large Navigation Tab Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 select-none no-print">
-        <button
-          onClick={() => navigate('/admin/act-type')}
-          className="nav-card-btn"
-        >
-          <i className="fas fa-plus fa-lg text-white" />
-          <span>Add Compliance Act Category</span>
-        </button>
-        <button
-          onClick={() => navigate('/admin/act-sub-type')}
-          className="nav-card-btn"
-        >
-          <i className="fas fa-plus fa-lg text-white" />
-          <span>Add Compliance Act Subcategory</span>
-        </button>
-        <button
-          onClick={() => navigate('/admin/login-access')}
-          className="nav-card-btn"
-        >
-          <i className="fas fa-plus fa-lg text-white" />
-          <span>Add Login Access</span>
-        </button>
-      </div>
-
-      {/* Add form */}
-      <div className="card no-print">
-        <div 
-          className="custom-card-header flex items-center justify-between cursor-pointer select-none"
-          onClick={() => setFormOpen(!formOpen)}
-        >
-          <h3>1. Add Compliance Act Category</h3>
-          <i className={`fas ${formOpen ? 'fa-angle-double-down' : 'fa-angle-double-up'} text-xs`} />
         </div>
-        <div className={`card-collapse-container ${formOpen ? 'open' : ''}`}>
-          <div className="p-5">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <label className="form-label mb-0 whitespace-nowrap">Enter Compliance Act Category <span className="text-red-500 font-bold">*</span></label>
-              <div className="flex-1 max-w-xl">
-                <input
-                  id="comp_act_type"
-                  className="form-input bg-white w-full"
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value)}
-                  placeholder="Enter compliance act category"
-                />
-              </div>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="btn text-white bg-[#3482AE] hover:bg-[#2A6B91] px-5 py-1.5 rounded uppercase font-bold text-xs border-0 cursor-pointer flex items-center justify-center gap-1.5 min-w-24"
-              >
-                {saving ? (
-                  <><span className="loading-spinner" /> Saving…</>
-                ) : (
-                  <><i className="fa fa-save" /> Submit</>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      </Modal>
 
       {/* List table */}
       <div className="card">
-        <div
-          className="custom-card-header flex items-center justify-between cursor-pointer select-none no-print"
-          onClick={() => setListOpen(!listOpen)}
-        >
-          <h3>2. Compliance Act Category Details</h3>
-          <i className={`fas ${listOpen ? 'fa-angle-double-down' : 'fa-angle-double-up'} text-xs`} />
+        <div className="custom-card-header flex items-center justify-between select-none no-print">
+          <h3>Compliance Act Category Details</h3>
+          <button
+            onClick={openForm}
+            className="add-record-btn"
+            title="Add Compliance Act Category"
+          >
+            <i className="fas fa-plus" /> Add
+          </button>
         </div>
-        <div className={`card-collapse-container ${listOpen ? 'open' : ''}`}>
-          <div className="p-4 md:p-5">
-            <DataTable columns={columns} data={data} loading={loading} reportTitle="Compliance Act Category List" />
-          </div>
+        <div className="p-4 md:p-5">
+          <DataTable columns={columns} data={data} loading={loading} reportTitle="Compliance Act Category List" />
         </div>
       </div>
     </div>

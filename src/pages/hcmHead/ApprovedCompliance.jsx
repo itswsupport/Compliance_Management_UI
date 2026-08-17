@@ -14,7 +14,6 @@ export default function HcmHeadApproved() {
       headerColor="card-header-approved"
       statusArray={[1]}
       navCards={NAV}
-      viewPath="/hcm-head/view"
     />
   );
 }

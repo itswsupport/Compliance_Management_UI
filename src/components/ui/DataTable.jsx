@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, createContext, useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// jsPDF is imported inside handlePdfExport, not here — keeps it off every page load.
 import {
   DataGrid,
   GridToolbarContainer,
@@ -33,7 +32,9 @@ const gridTheme = createTheme({
 const GridUICtx = createContext({});
 
 function GridToolbarNoExport() {
-  const { isFullscreen, toggleFullscreen, filtersVisible, toggleFilters, hasActiveFilters, clearFilters, reportDensityFactor } = useContext(GridUICtx);
+  const { isFullscreen, toggleFullscreen, filtersVisible, toggleFilters, hasActiveFilters, hasQuickFilterText, clearFilters, reportDensityFactor } = useContext(GridUICtx);
+  // Open width — applied on focus, and while the box holds text.
+  const searchOpen = { width: { xs: 160, sm: 220 } };
   const showCross = filtersVisible || hasActiveFilters;
   const apiRef = useGridApiContext();
   const densityFactor = useGridSelector(apiRef, gridDensityFactorSelector);
@@ -56,11 +57,14 @@ function GridToolbarNoExport() {
           width: 34,
           transition: 'width 0.2s ease',
           overflow: 'hidden',
-          '&:focus-within': { width: { xs: 160, sm: 220 } },
-          '& .MuiInput-underline:before': { borderBottomColor: 'transparent' },
+          ...(hasQuickFilterText ? searchOpen : {}),
+          '&:focus-within': searchOpen,
+          '& .MuiInput-underline:before': {
+            borderBottomColor: hasQuickFilterText ? 'rgba(0,0,0,0.42)' : 'transparent',
+          },
           '&:focus-within .MuiInput-underline:before': { borderBottomColor: 'rgba(0,0,0,0.42)' },
           '& .MuiInputBase-root': { minHeight: 30, paddingTop: 0, paddingBottom: 0, width: '100%' },
-          '& .MuiInputAdornment-root': { marginRight: 0 },
+          '& .MuiInputAdornment-root': { marginRight: hasQuickFilterText ? '8px' : 0 },
           '&:focus-within .MuiInputAdornment-root': { marginRight: '8px' },
           '& .MuiInputBase-input': { paddingTop: '3px', paddingBottom: '3px', fontSize: 13, textTransform: 'uppercase !important' },
           '& input::placeholder': { textTransform: 'uppercase !important', fontSize: 12, opacity: 0.7 },
@@ -180,6 +184,8 @@ function CustomColumnMenu(props) {
   );
 }
 
+// Placeholder rows shown while the list is still on its way. Keeps the grid's
+// shape on screen instead of an empty table reading "NO RECORDS FOUND".
 const SKELETON_ROWS = 8;
 function GridLoadingSkeleton() {
   const apiRef = useGridApiContext();
@@ -224,10 +230,15 @@ export default function DataTable({ columns = [], data = [], reportTitle = 'Repo
       if (value) items.push({ field, operator: 'contains', value, id: field });
       return { ...prev, items };
     });
+  // Keeps the search box open once focus moves away.
+  const hasQuickFilterText =
+    filterModel.quickFilterValues?.some((v) => v != null && v !== '') ?? false;
+  // Column filters only — the search box must not light up the filter icon.
   const hasActiveFilters =
-    filterModel.items.some((it) => it.value != null && it.value !== '') ||
-    (filterModel.quickFilterValues?.some((v) => v != null && v !== '') ?? false);
-  const clearFilters = () => setFilterModel({ items: [], quickFilterValues: [] });
+    filterModel.items.some((it) => it.value != null && it.value !== '');
+  // Clears the column filters only — the search box keeps its text.
+  const clearFilters = () =>
+    setFilterModel((prev) => ({ items: [], quickFilterValues: prev.quickFilterValues ?? [] }));
   useEffect(() => {
     if (!isFullscreen) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') setIsFullscreen(false); };
@@ -311,7 +322,11 @@ export default function DataTable({ columns = [], data = [], reportTitle = 'Repo
       valueGetter: (_value, row) => getCellValue(row, col, row.__idx),
       renderHeader: () => <ColumnHeader label={col.label || ''} field={field} filterable={filterable} sortable={hasKey && !isAction} />,
     };
-    if (isAction) {
+    if (col.width) {
+      // Opt-in fixed width from the caller; wins over the Action default.
+      // Columns without it behave exactly as before.
+      def.width = col.width;
+    } else if (isAction) {
       def.width = 90;
     } else {
       def.flex = 1;
@@ -388,7 +403,13 @@ export default function DataTable({ columns = [], data = [], reportTitle = 'Repo
     URL.revokeObjectURL(url);
   }
 
-  function handlePdfExport() {
+  async function handlePdfExport() {
+    // Loaded on first click only.
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
+
     const doc = new jsPDF('landscape');
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(16);
@@ -496,7 +517,7 @@ export default function DataTable({ columns = [], data = [], reportTitle = 'Repo
 
       <ThemeProvider theme={gridTheme}>
        <GridUICtx.Provider
-         value={{ isFullscreen, toggleFullscreen, filtersVisible, toggleFilters, hasActiveFilters, clearFilters, reportDensityFactor: setDensityFactor, revealFilters: () => setFiltersVisible(true), getColFilter, setColFilter }}
+         value={{ isFullscreen, toggleFullscreen, filtersVisible, toggleFilters, hasActiveFilters, hasQuickFilterText, clearFilters, reportDensityFactor: setDensityFactor, revealFilters: () => setFiltersVisible(true), getColFilter, setColFilter }}
        >
         {isFullscreen ? createPortal(gridBlock, document.body) : gridBlock}
        </GridUICtx.Provider>

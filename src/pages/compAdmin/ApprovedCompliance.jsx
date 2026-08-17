@@ -15,7 +15,6 @@ export default function CompAdminApproved() {
       headerColor="card-header-approved"
       statusArray={[1]}
       navCards={NAV_CARDS}
-      viewPath="/comp-admin/view"
     />
   );
 }

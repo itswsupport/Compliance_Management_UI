@@ -15,7 +15,7 @@ export default function AuthorityRejected() {
       headerColor="card-header-rejected"
       statusArray={[2]}
       navCards={NAV}
-      viewPath="/authority/view"
+      viewShowAction={false}
     />
   );
 }

@@ -651,6 +651,31 @@ textarea.form-input:disabled {
   color: #ffffff !important;
 }
 
+/* ── Dropdown option list scrollbar ──
+   The OS default bar is as wide as a column of the panel it sits in. This is
+   the thin, unobtrusive version used by every SearchableSelect. */
+.dropdown-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.dropdown-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 3px;
+}
+
+.dropdown-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
 /* ── Scrollbar ── */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
@@ -747,12 +772,11 @@ label {
 }
 
 .nav-card-btn {
-  background-color: #007BFF !important;
-  opacity: 0.6 !important;
+  background-color: #3482AE !important;
   color: white !important;
   font-family: 'Exo', sans-serif !important;
   font-weight: 400 !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
   text-transform: uppercase !important;
   border-radius: 2px !important;
   border: none !important;
@@ -761,9 +785,9 @@ label {
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 6px 10px !important;
-  height: 52px !important;
-  gap: 8px !important;
+  padding: 10px 12px !important;
+  height: 72px !important;
+  gap: 16px !important;
   transition: all 0.2s ease-in-out !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
   line-height: 1.2 !important;
@@ -772,12 +796,11 @@ label {
 }
 
 .nav-card-btn:hover {
-  background-color: #3bb0fa !important;
-  opacity: 1 !important;
+  background-color: #2A6B91 !important;
 }
 
 .nav-card-btn i {
-  font-size: 16px !important;
+  font-size: 22px !important;
   font-weight: 1000 !important;
   -webkit-text-stroke: 1px white !important;
   margin: 0 !important;
@@ -808,6 +831,111 @@ label {
 .custom-card-header h3 i,
 .custom-card-header1 h3 i {
   color: #384c74 !important;
+}
+
+/* ── Form controls inside a Modal ──
+   The page forms are deliberately dense; a dialog has room to breathe, so its
+   labels and inputs are larger. Scoped to .modal-form so nothing else moves. */
+.modal-form .form-label {
+  font-size: 13px !important;
+  margin-bottom: 6px !important;
+}
+
+.modal-form .form-input {
+  height: 38px !important;
+  font-size: 12px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  border-radius: 3px !important;
+}
+
+/* SearchableSelect's trigger sets its label size inline — !important wins. */
+.modal-form .form-input>span {
+  font-size: 12px !important;
+}
+
+/* SearchableSelect's dropdown panel portals to <body>, so it sits outside
+   .modal-form. Modal marks <body> while open, which keeps this to the dialogs
+   that use it (Admin Settings) and leaves every other page's dropdown alone. */
+body.modal-open .z-\[9999\],
+body.modal-open .z-\[9999\] * {
+  font-size: 12px !important;
+}
+
+.modal-form .form-error {
+  font-size: 12px !important;
+}
+
+/* Inline validation message shown under a field inside a form / popup —
+   red, uppercase, normal weight. Replaces a separate alert dialog. */
+.form-error {
+  color: #DC3545 !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  margin-top: 4px !important;
+}
+
+/* "Back to List" on a colored card header (Compliance View) — plain white text
+   only: no background, border, or hover effect. Typography matches the card
+   header's own h3: 12px Exo, bold, #FFFFFF. */
+.back-to-list-btn {
+  background: none !important;
+  background-color: transparent !important;
+  color: #FFFFFF !important;
+  font-family: 'Exo', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  text-transform: uppercase !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+  transition: opacity 0.15s ease-in-out !important;
+}
+
+.back-to-list-btn:hover {
+  opacity: 0.72 !important;
+}
+
+.back-to-list-btn i {
+  font-size: 12px !important;
+  color: #FFFFFF !important;
+}
+
+/* "Add …" button sitting on the right of a list card header */
+.add-record-btn {
+  background-color: #3482AE !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.03em;
+  padding: 3px 10px !important;
+  border: none !important;
+  border-radius: 3px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+}
+
+.add-record-btn:hover {
+  background-color: #2A6B91 !important;
+}
+
+.add-record-btn i {
+  font-size: 10px !important;
+  color: #ffffff !important;
 }
 
 .custom-card-header .fa-angle-double-down,

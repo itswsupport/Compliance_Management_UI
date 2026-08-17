@@ -78,7 +78,7 @@ export default function LoginCheck() {
 //   const [searchParams] = useSearchParams();
 //   const { loginUser, logoutUser } = useAuth();
 //   const navigate = useNavigate();
-//   const [status, setStatus] = useState('');
+//   // Only used to stop a double submit — there is no spinner.
 //   const [loading, setLoading] = useState(false);
 //   const [isManualLogin, setIsManualLogin] = useState(false);
 
@@ -101,27 +101,17 @@ export default function LoginCheck() {
 //     if (empCode) {
 //       handleAutoLogin(empCode, empPass);
 //     } else {
-//       // No credentials -> show the login form, on the server as well as
-//       // locally. This branch used to be gated on import.meta.env.DEV, which is
-//       // false in any `vite build`, so a deployed build always fell through to
-//       // `window.location.href = PORTAL_URL` and bounced to dashboard.jsp.
-//       // PORTAL_URL is still used by the "Back to RUCHA Portal" link below.
+//       // No credentials — show the form. Not gated on DEV: that is false in any build.
 //       setIsManualLogin(true);
 //     }
 //   }, [searchParams]); 
 //   const handleAutoLogin = async (code, pass) => {
 //     setLoading(true);
-//     setStatus(`Authenticating (${code})…`);
 //     try {
 //       const user = await loginUser(code, pass);
 //       redirectByUserRole(user);
 //     } catch (err) {
-//       // UNAUTHORISED is an authorisation decision, not a typo — the account is
-//       // real but has no row in comp_login_access. There is nothing useful to
-//       // retype, so it lands on Access Denied in every build, local included.
-//       //
-//       // Anything else (unknown employee code, backend unreachable) still falls
-//       // back to the manual form in dev, which is the point of that form.
+//       // No access = Access Denied; any other failure falls back to the form in dev.
 //       if (err.message === 'UNAUTHORISED' || !import.meta.env.DEV) {
 //         logoutUser();
 //         navigate('/access-denied', { replace: true });
@@ -142,14 +132,11 @@ export default function LoginCheck() {
 //     }
 //     setErrorMessage('');
 //     setLoading(true);
-//     setStatus('Verifying credentials…');
 //     try {
 //       const user = await loginUser(empCodeInput.trim(), passwordInput);
 //       redirectByUserRole(user);
 //     } catch (err) {
-//       // Same rule as the automatic path: no permissions means the Access Denied
-//       // page, not an inline message the user can only stare at. A wrong code or
-//       // a dead backend stays on the form, where it can be corrected.
+//       // No access = Access Denied; a wrong code stays on the form to be corrected.
 //       if (err.message === 'UNAUTHORISED') {
 //         logoutUser();
 //         navigate('/access-denied', { replace: true });
@@ -161,11 +148,14 @@ export default function LoginCheck() {
 //     }
 //   };
 
-//   // Shared with the portal token hand-off (pages/auth/TokenLogin) so both doors
-//   // into the app agree on where each role lands.
+//   // Shared with TokenLogin so both doors land each role in the same place.
 //   const redirectByUserRole = (user) => {
-//     navigate(homePathForUser(user), { replace: true });
+//     // openCalendar marks the post-login landing, so Comp Admin leads with the calendar.
+//     navigate(homePathForUser(user), { replace: true, state: { openCalendar: true } });
 //   };
+
+//   // Automatic sign-in draws nothing, same as TokenLogin.
+//   if (!isManualLogin) return null;
 
 //   return (
 //     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary-600 via-primary to-primary-800">
@@ -181,17 +171,7 @@ export default function LoginCheck() {
 //           <p className="text-white/60 text-xs mt-1">RUCHA Industries Ltd.</p>
 //         </div>
 
-//         {loading ? (
-          
-//           <div className="flex flex-col items-center gap-4 py-6">
-//             <div className="relative">
-//               <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-white animate-spin" />
-//               <i className="fas fa-shield-alt text-white/60 text-sm absolute inset-0 flex items-center justify-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
-//             </div>
-//             <p className="text-white/80 text-sm">{status}</p>
-//           </div>
-//         ) : isManualLogin ? (
-//           <form onSubmit={handleFormSubmit} className="space-y-4 text-left">
+//         <form onSubmit={handleFormSubmit} className="space-y-4 text-left">
 //             {errorMessage && (
 //               <div className="bg-orange-500/20 border border-orange-400/30 rounded-lg p-3 text-white text-xs text-center leading-relaxed">
 //                 <i className="fas fa-exclamation-triangle mr-2 text-orange-300" />
@@ -239,7 +219,8 @@ export default function LoginCheck() {
 
 //             <button
 //               type="submit"
-//               className="w-full py-2.5 rounded-lg bg-white text-primary font-bold uppercase tracking-wider text-xs hover:bg-white/90 active:scale-[0.99] transition-all shadow-md mt-2"
+//               disabled={loading}
+//               className="w-full py-2.5 rounded-lg bg-white text-primary font-bold uppercase tracking-wider text-xs hover:bg-white/90 active:scale-[0.99] transition-all shadow-md mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
 //             >
 //               Sign In
 //             </button>
@@ -253,7 +234,6 @@ export default function LoginCheck() {
 //               </a>
 //             </div>
 //           </form>
-//         ) : null}
 
 //       </div>
 

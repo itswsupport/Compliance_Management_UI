@@ -1,5 +1,6 @@
 import { useAuth } from '../../context/AuthContext';
 import { PORTAL_URL } from '../../utils/constants';
+import NotificationBell from './NotificationBell';
 import Swal from 'sweetalert2';
 
 export default function Navbar({ onMenuToggle, sidebarOpen }) {
@@ -39,8 +40,10 @@ export default function Navbar({ onMenuToggle, sidebarOpen }) {
       {/* Center: empty */}
       <div className="flex items-center gap-1" />
 
-      {/* Right: help + logout */}
+      {/* Right: notifications + help + logout */}
       <div className="flex items-center gap-3">
+        <NotificationBell />
+
         {/* Help dropdown */}
         <div className="relative group">
           <button className="text-white hover:text-white/80 text-xs  transition-colors flex items-center gap-1.5 bg-transparent border-0 px-2 py-1 cursor-pointer uppercase select-none">

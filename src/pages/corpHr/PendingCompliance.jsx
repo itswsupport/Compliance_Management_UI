@@ -14,7 +14,6 @@ export default function CorpHrPending() {
       headerColor="card-header-pending"
       statusArray={[0, 11]}
       navCards={NAV}
-      viewPath="/corp-hr/view"
     />
   );
 }

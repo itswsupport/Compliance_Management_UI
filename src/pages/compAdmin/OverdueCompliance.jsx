@@ -15,7 +15,8 @@ export default function CompAdminOverdue() {
       headerColor="card-header-overdue"
       statusArray={[5]}
       navCards={NAV_CARDS}
-      viewPath="/comp-admin/view"
+      showCalendar={true}
+      calendarDefaultOpen={true}
     />
   );
 }

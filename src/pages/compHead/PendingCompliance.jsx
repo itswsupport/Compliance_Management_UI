@@ -14,7 +14,6 @@ export default function CompHeadPending() {
       headerColor="card-header-pending"
       statusArray={[0, 4, 11]}
       navCards={NAV}
-      viewPath="/comp-head/view"
     />
   );
 }

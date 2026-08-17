@@ -15,7 +15,7 @@ export default function AuthorityOverdue() {
       headerColor="card-header-overdue"
       statusArray={[5]}
       navCards={NAV}
-      viewPath="/authority/view"
+      viewShowAction={false}
     />
   );
 }
