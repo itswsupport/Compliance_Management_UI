@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import { PORTAL_URL } from '../../utils/constants';
 import Swal from 'sweetalert2';
 
+// `label` is either a string or, where two roles share one entry, a function of
+// the user — the link has to name the role the user actually holds.
 const NAV_ITEMS = [
   {
     id: 'comp_admin',
@@ -15,7 +17,8 @@ const NAV_ITEMS = [
   },
   {
     id: 'plant_hr',
-    label: 'User Dashboard',
+    // CHD and Plant HR share this entry — it names the role the user holds.
+    label: (u) => (u.isChd ? 'CHD Dashboard' : 'Plant Hr Dashboard'),
     icon: 'fas fa-tachometer-alt',
     to: '/plant-hr/pending',
     show: (u) => u.isChd || u.isPlantHr,
@@ -48,6 +51,9 @@ const NAV_ITEMS = [
     to: '/authority/pending',
     show: (u) => u.isAuthority,
   },
+  // No notice entry here. Every dashboard carries a Notice Dashboard card, and
+  // that card is the way in — a sidebar link beside it would be a second door
+  // to the same room. See NAV_CARDS on the dashboard pages.
   {
     id: 'admin_settings',
     label: 'Admin Settings',
@@ -163,7 +169,11 @@ export default function Sidebar({ isOpen, onClose }) {
               }
             >
               <i className={`${item.icon} w-4 text-center flex-shrink-0 text-sm`} />
-              {isOpen && <span className="whitespace-nowrap">{item.label}</span>}
+              {isOpen && (
+                <span className="whitespace-nowrap">
+                  {typeof item.label === 'function' ? item.label(user) : item.label}
+                </span>
+              )}
             </NavLink>
           ))}
           {/* Logout as inline menu item */}

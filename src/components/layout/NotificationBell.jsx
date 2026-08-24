@@ -1,82 +1,51 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { cachedEntries, subscribeCardCache } from '../ui/DashboardNavCards';
 import { viewPathForUser } from '../../utils/roleRoutes';
 import { sectionOf } from '../../utils/navSection';
+import { onNoticesRead } from '../../utils/noticeRead';
 import { LS_KEYS } from '../../utils/constants';
+import { onRecordOpened } from '../../utils/recordOpened';
+import {
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from '../../services/notificationService';
 
-// Last status the user saw per record: { "<empCode>": { "<id>": status } }.
-// Per browser, so Chrome and Edge track separately — there is no server side.
-const SEEN_KEY = 'comp_notif_seen';
 
-function readSeen(empCode) {
-  try {
-    return JSON.parse(localStorage.getItem(SEEN_KEY) || '{}')[String(empCode)] || null;
-  } catch {
-    return null;
-  }
-}
-
-function writeSeen(empCode, map) {
-  try {
-    const all = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}');
-    all[String(empCode)] = map;
-    localStorage.setItem(SEEN_KEY, JSON.stringify(all));
-  } catch {
-    // Private mode or a full quota — the bell just shows everything as unread.
-  }
-}
-
-// The bell has to redraw when something outside it marks a record read.
-const seenListeners = new Set();
-function publishSeen() {
-  seenListeners.forEach((fn) => fn());
-}
+// How often to re-read the list. The server writes a row the moment somebody
+// acts, so this is how soon the bell hears about what other people did.
+const REFRESH_MS = 60000;
 
 /**
- * Mark one compliance read. Called by ComplianceView whenever a record is
- * opened, so reaching it from the list counts as reading its notification too —
- * not only clicking it in the panel.
- */
-export function markComplianceRead(empCode, compId) {
-  if (!empCode || compId == null) return;
-  const row = uniqueRows().find((r) => String(r.id) === String(compId));
-  if (!row) return;
-  const state = myState(row, empCode);
-  if (!state) return;
-  const all = readSeen(empCode) || {};
-  if (all[String(compId)] === state.key) return;
-  writeSeen(empCode, { ...all, [String(compId)]: state.key });
-  publishSeen();
-}
-
-// One row per compliance, tagged with the dashboard path it was cached under.
-// A record can sit in two cached tabs at once (Plant HR counts status 0 under
-// both Pending and Overdue), so the id decides.
-function uniqueRows() {
-  const byId = new Map();
-  cachedEntries().forEach(([path, rows]) => {
-    (rows || []).forEach((row) => {
-      if (row && row.id != null) byId.set(String(row.id), { ...row, from: path });
-    });
-  });
-  return [...byId.values()];
-}
-
-// Statuses that mean an action row is still waiting on its owner.
-const WAITING = [0, 5, 11, 22];
-// ComplianceConstants.COMP_ASSIGNED — the row written for whoever assigned it.
-const ASSIGNED = 6;
-
-/**
- * The dashboard where this user can actually act on a waiting row.
+ * How each event reads.
  *
- * A user can hold several roles, so "open the compliance" is not enough — a
- * record awaiting the Comp Head has to open on the Comp Head dashboard, or the
- * approve/reject form is not there. authLevel says which role is required;
- * level 2 is an approval step, which is Comp Head or Corp HR depending on who
- * this user is. Null when they hold no role that can act.
+ * Keyed by the `status` the server stamped — the same value that chose the
+ * mail — so there is nothing to work out here. The bell no longer reconstructs
+ * who should have been told from compliance_action rows: the flow knew at the
+ * moment it acted, and now it writes that down.
+ */
+const LOOK = {
+  ASSIGNED:       { icon: 'fas fa-clipboard-list', color: '#3482AE' },
+  SUBMITTED:      { icon: 'fas fa-user-check',     color: '#3482AE' },
+  RESUBMITTED:    { icon: 'fas fa-user-check',     color: '#3482AE' },
+  FINAL_APPROVAL: { icon: 'fas fa-user-check',     color: '#6f42c1' },
+  APPROVED:       { icon: 'fas fa-check-circle',   color: '#2ed8b6' },
+  REJECTED:       { icon: 'fas fa-undo',           color: '#e74c3c' },
+  DUE_SOON:       { icon: 'fas fa-clock',          color: '#FFB64D' },
+  OVERDUE:        { icon: 'fas fa-hourglass-half', color: '#FFB64D' },
+  PUBLISHED:      { icon: 'fas fa-bullhorn',       color: '#3482AE' },
+};
+const DEFAULT_LOOK = { icon: 'fas fa-bell', color: '#869099' };
+
+/**
+ * The dashboard where this user can act on a record.
+ *
+ * authLevel rides on the notification, because the server knew which step it
+ * raised. A record awaiting the Comp Head opens on the Comp Head dashboard even
+ * when the user also holds another role, or the approve form is not there.
+ * Null when they hold no role that can act, and the caller falls back to their
+ * own view.
  */
 function actionPath(user, authLevel) {
   const lvl = Number(authLevel);
@@ -89,88 +58,79 @@ function actionPath(user, authLevel) {
   return null;
 }
 
-/**
- * What this record means to THIS user, or null when it means nothing.
- *
- * The workflow hands a record along — admin assigns, Plant HR submits, Corp HR
- * approves — and only the person it is sitting with should be told to act. That
- * is decided by the action row addressed to them, not by the record's status.
- */
-function myState(row, empCode) {
-  const mine = (row.compActionList || [])
-    .filter((a) => Number(a.authEmpCode) === Number(empCode) && WAITING.includes(Number(a.status)))
-    .pop();
-
-  // act = something is required of me. Only these survive a first sighting;
-  // everything else is stamped silently, or every record already in the system
-  // would arrive as a notification the first time its tab is cached.
-  if (mine) {
-    // lvl rides along so the click can open the dashboard that can act on it.
-    const lvl = Number(mine.authLevel);
-    if (Number(row.status) === 5) {
-      return { key: 'overdue', act: true, lvl, text: 'Overdue — action required', icon: 'fas fa-hourglass-half', color: '#FFB64D' };
-    }
-    // authLevel 1/4 = doer submits, 3 = final approval, 2 = approval step.
-    if (lvl === 1 || lvl === 4) {
-      return { key: 'submit', act: true, lvl, text: 'Assigned to you — submission pending', icon: 'fas fa-clipboard-list', color: '#3482AE' };
-    }
-    if (lvl === 3) {
-      return { key: 'final', act: true, lvl, text: 'Final approval pending with you', icon: 'fas fa-user-check', color: '#6f42c1' };
-    }
-    return { key: 'approve', act: true, lvl, text: 'Approval pending with you', icon: 'fas fa-user-check', color: '#3482AE' };
-  }
-
-  // Outcomes go to whoever RAISED it, and to nobody else. Approvers know what
-  // they just clicked, and the doer is told only when something is needed from
-  // them — a rejection comes back as a waiting row, so it still reaches them
-  // above, as "action required" rather than as news.
-  //
-  // The assignment writes an action row at status 6 (COMP_ASSIGNED) addressed to
-  // the person who assigned it. Reading that works whoever they are: flow 1 is
-  // raised by the Comp Admin, flow 2 by the Comp Head, and an earlier check for
-  // "cached under /comp-admin/" missed the second one entirely.
-  const iAssignedIt = (row.compActionList || []).some(
-    (a) => Number(a.authEmpCode) === Number(empCode) && Number(a.status) === ASSIGNED,
-  );
-  if (!iAssignedIt) return null;
-
-  // Nothing waiting on me — only the outcome. No name is shown: actionByEmpName
-  // is whoever the record is WITH, not who acted, so "Approved by X" named the
-  // person still holding it for final approval.
-  if (Number(row.status) === 1) {
-    const awaitingFinal = (row.compActionList || []).some((a) => Number(a.status) === 22);
-    return awaitingFinal
-      ? { key: 'approved-final', text: 'Approved — final approval pending', icon: 'fas fa-check-circle', color: '#3482AE' }
-      : { key: 'approved', text: 'Approved', icon: 'fas fa-check-circle', color: '#2ed8b6' };
-  }
-  if (Number(row.status) === 2) {
-    return { key: 'rejected', text: 'Rejected', icon: 'fas fa-times-circle', color: '#e74c3c' };
-  }
-
-  // Still moving through the flow. Reported so the record is TRACKED from the
-  // moment it is raised — never as a badge, since act is false and a first
-  // sighting is stamped quietly. Without it the raiser's record was unknown
-  // until it finished, and "unknown -> approved" reads as a pre-existing record
-  // rather than a change, so the approval was swallowed silently.
-  return { key: 'progress', text: 'In progress', icon: 'fas fa-clock', color: '#869099' };
-}
-
 export default function NotificationBell() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  // Bumped whenever the shared row cache changes, to recompute off the new rows.
-  const [tick, setTick] = useState(0);
+  const [items, setItems] = useState([]);
   const boxRef = useRef(null);
+  // What the bell is holding right now, readable from a subscription that must
+  // not be torn down and rebuilt every time the list changes.
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
-  useEffect(() => subscribeCardCache(() => setTick((t) => t + 1)), []);
+  const empCode = user?.empCode;
 
-  // Redraw when ComplianceView marks a record read from outside this component.
+  const load = useCallback(async () => {
+    if (!empCode) return;
+    try {
+      // One source. A notice writes a row in compliance_notifications like any
+      // compliance event does, so what the user has read is the server's answer
+      // and follows them to whatever browser they sign in from.
+      const res = await getNotifications(empCode);
+      setItems(res.data?.response || []);
+    } catch {
+      // Leave what is on screen rather than emptying the bell over one blip.
+    }
+  }, [empCode]);
+
+  // Read once, then on a timer, then whenever the tab comes back to the front.
+  // Somebody else's rejection has to reach this user without them navigating:
+  // the mail arrives on its own, and so must this.
   useEffect(() => {
-    const bump = () => setTick((t) => t + 1);
-    seenListeners.add(bump);
-    return () => seenListeners.delete(bump);
-  }, []);
+    if (!empCode) return undefined;
+    load();
+    const id = setInterval(() => { if (!document.hidden) load(); }, REFRESH_MS);
+    const onVisible = () => { if (!document.hidden) load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [empCode, load]);
+
+  // Opening a record IS reading its notification, so a record opened from the
+  // list or the calendar clears its own the way one opened from the bell does.
+  // Anything less means the badge still shows a 1 for the compliance the user
+  // is looking at.
+  useEffect(() => {
+    if (!empCode) return undefined;
+    return onRecordOpened(async (referenceId) => {
+      // A notice entry points at a notice id, which can collide with a
+      // compliance id — different tables. Only compliance rows are meant here,
+      // and only they have a server row to mark read.
+      const hits = itemsRef.current.filter(
+        (n) => n.type !== 'NOTICE' && String(n.referenceId) === referenceId,
+      );
+      if (hits.length === 0) return;
+
+      // Off the badge at once; the server catches up behind it.
+      const ids = new Set(hits.map((n) => n.id));
+      setItems((list) => list.filter((n) => !ids.has(n.id)));
+      try {
+        await Promise.all(hits.map((n) => markNotificationRead(n.id, empCode)));
+      } catch {
+        // The rows simply come back on the next read.
+      }
+    });
+  }, [empCode]);
+
+  // The Notice Dashboard has just cleared them on the server. Drop them here
+  // and now rather than at the next read, which could be a minute away and
+  // would leave a badge for the very page the user is standing on.
+  useEffect(() => onNoticesRead(() => {
+    setItems((list) => list.filter((n) => n.type !== 'NOTICE'));
+  }), []);
 
   // Close on an outside click, the way the Help menu closes on mouse-out.
   useEffect(() => {
@@ -182,55 +142,40 @@ export default function NotificationBell() {
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
-  const empCode = user?.empCode;
-  // Only records that say something to this user, each with what they say.
-  const notes = empCode
-    ? uniqueRows()
-        .map((row) => ({ row, state: myState(row, empCode) }))
-        .filter((n) => n.state)
-    : [];
-  const seen = (empCode ? readSeen(empCode) : null) || {};
-
-  // Records seen for the first time that ask nothing of me are recorded quietly.
-  useEffect(() => {
+  // Cleared on the server, so it stays cleared in every browser this user opens.
+  async function clearAll() {
     if (!empCode) return;
-    const quiet = notes.filter((n) => seen[String(n.row.id)] === undefined && !n.state.act);
-    if (quiet.length === 0) return;
-    writeSeen(empCode, {
-      ...seen,
-      ...Object.fromEntries(quiet.map((n) => [String(n.row.id), n.state.key])),
-    });
-    setTick((t) => t + 1);
-  }, [empCode, notes.length, seen]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Unread = it changed since last time, or it is new AND wants something from
-  // me. Covers the hand-off: it lands with the next person as it reaches them.
-  const items = notes
-    .filter((n) => {
-      const prev = seen[String(n.row.id)];
-      return prev === undefined ? n.state.act : prev !== n.state.key;
-    })
-    .sort((a, b) => Number(b.row.id) - Number(a.row.id));
-
-  function openCompliance(row, state) {
-    setOpen(false);
-    // Only the one opened is marked read. Merging, never replacing, so the rest
-    // keep their history and stay in the list until they are opened too.
-    if (empCode) {
-      writeSeen(empCode, { ...seen, [String(row.id)]: state.key });
-      setTick((t) => t + 1);
+    setItems([]);
+    try {
+      await markAllNotificationsRead(empCode);
+    } finally {
+      load();
     }
-    localStorage.setItem(LS_KEYS.ID, row.id);
-    // Something waiting on me opens where I can act on it — a record pending
-    // with the Comp Head must open on the Comp Head dashboard even if the user
-    // is also an admin, or there is no approve/reject form to use. Anything else
-    // opens on the dashboard it was cached under; viewPathForUser is the last
-    // resort, and answers by role priority alone.
-    const section = sectionOf(row.from);
-    const target = (state?.act && actionPath(user, state.lvl))
-      || (section ? `/${section}/view` : viewPathForUser(user));
-    // Back goes to that view's OWN dashboard. Without it the view falls back to
-    // navigate(-1), which lands on whatever page the bell was clicked from.
+  }
+
+  async function openItem(n) {
+    setOpen(false);
+    setItems((list) => list.filter((x) => x.id !== n.id));
+
+    // A notice has nowhere of its own to open — the board lists it in full, and
+    // opening that board marks every notice read in one call. So this row is
+    // not marked read here: getting the user there does it, and does the rest
+    // of them at the same time.
+    if (n.type === 'NOTICE') {
+      navigate('/notice/list');
+      return;
+    }
+
+    try {
+      await markNotificationRead(n.id, empCode);
+    } catch {
+      // Navigate anyway; the row simply returns on the next read.
+    }
+
+    localStorage.setItem(LS_KEYS.ID, n.referenceId);
+    // Where they can act on it, else their own view. Back goes to that view's
+    // own dashboard rather than wherever the bell happened to be clicked from.
+    const target = actionPath(user, n.authLevel) || viewPathForUser(user);
     navigate(target, { state: { backTo: `/${sectionOf(target)}/pending` } });
   }
 
@@ -245,9 +190,7 @@ export default function NotificationBell() {
       >
         <i className="fas fa-bell text-sm" />
         {items.length > 0 && (
-          <span
-            className="absolute top-0 right-0 min-w-[15px] h-[15px] px-[3px] rounded-full bg-[#e74c3c] text-white text-[9px] font-bold flex items-center justify-center leading-none"
-          >
+          <span className="absolute top-0 right-0 min-w-[15px] h-[15px] px-[3px] rounded-full bg-[#e74c3c] text-white text-[9px] font-bold flex items-center justify-center leading-none">
             {items.length > 99 ? '99+' : items.length}
           </span>
         )}
@@ -261,7 +204,18 @@ export default function NotificationBell() {
             <span className="text-[11px] font-bold uppercase tracking-wide text-gray-600">
               Notifications
             </span>
-            <span className="text-[11px] font-semibold text-gray-500">{items.length}</span>
+            <span className="flex items-center gap-2.5">
+              {items.length > 0 && (
+                <button
+                  onClick={clearAll}
+                  title="Mark every notification as read"
+                  className="text-[10px] font-bold uppercase tracking-wide text-[#3482AE] hover:opacity-70 bg-transparent border-0 p-0 cursor-pointer"
+                >
+                  Clear All
+                </button>
+              )}
+              <span className="text-[11px] font-semibold text-gray-500">{items.length}</span>
+            </span>
           </div>
 
           <div className="max-h-[60vh] sm:max-h-80 overflow-y-auto">
@@ -270,25 +224,27 @@ export default function NotificationBell() {
                 Nothing new
               </p>
             ) : (
-              items.map(({ row, state: d }) => (
+              items.map((n) => {
+                const look = LOOK[n.status] || DEFAULT_LOOK;
+                return (
                   <button
-                    key={row.id}
-                    onClick={() => openCompliance(row, d)}
+                    key={n.id}
+                    onClick={() => openItem(n)}
                     className="w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors bg-transparent cursor-pointer flex gap-2.5 items-start"
                   >
-                    <i className={`${d.icon} text-sm mt-0.5 flex-shrink-0`} style={{ color: d.color }} />
+                    <i className={`${look.icon} text-sm mt-0.5 flex-shrink-0`} style={{ color: look.color }} />
                     <span className="min-w-0">
                       <span className="block text-[11px] font-bold text-gray-700 truncate">
-                        {row.compSrNo}
+                        {n.compSrNo || n.title}
                       </span>
-                      <span className="block text-[11px] text-gray-500 truncate">{d.text}</span>
+                      <span className="block text-[11px] text-gray-500">{n.message}</span>
                       <span className="block text-[10px] text-gray-400 truncate">
-                        {row.compActType}
-                        {row.firstDueDate ? ` · due ${row.firstDueDate}` : ''}
+                        {`${n.regDate || ''} ${n.regTime || ''}`.trim()}
                       </span>
                     </span>
                   </button>
-              ))
+                );
+              })
             )}
           </div>
         </div>

@@ -41,27 +41,23 @@ export default function Navbar({ onMenuToggle, sidebarOpen }) {
       <div className="flex items-center gap-1" />
 
       {/* Right: notifications + help + logout */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1 pr-6">
         <NotificationBell />
 
-        {/* Help dropdown */}
-        <div className="relative group">
-          <button className="text-white hover:text-white/80 text-xs  transition-colors flex items-center gap-1.5 bg-transparent border-0 px-2 py-1 cursor-pointer uppercase select-none">
-            <i className="fas fa-comments text-sm" />
-            <span>Help</span>
-            <i className="fas fa-caret-down text-[10px]" />
-          </button>
-          <div className="absolute right-0 top-full mt-1 bg-white rounded shadow-lg border border-gray-200 py-1 w-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <a
-              href={`${import.meta.env.BASE_URL}links/user_manual/ComplianceManagementSystemManual.pdf`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors normal-case"
-            >
-              <i className="fas fa-file-pdf text-red-500" /> User Manual
-            </a>
-          </div>
-        </div>
+        {/* Help: opens the web user manual directly, no dropdown.
+            The web manual replaces the old PDF deck: its screens are rebuilt
+            from this app's own markup, so it cannot fall behind the UI the
+            way the PDF's screenshots did. It carries its own Print / Save as
+            PDF button for anyone who wants a paper copy. */}
+        <a
+          href={`${import.meta.env.BASE_URL}links/user_manual/index.html`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-white hover:text-white/80 text-xs transition-colors flex items-center gap-1.5 bg-transparent border-0 px-2 py-1 cursor-pointer uppercase select-none no-underline"
+        >
+          <i className="fas fa-comments text-sm" />
+          <span>Help</span>
+        </a>
 
         {/* Logout */}
         <button

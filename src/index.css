@@ -582,7 +582,8 @@ textarea.form-input:disabled {
 .card-header-rejected,
 .card-header-info,
 .card-header-primary,
-.card-header-overdue {
+.card-header-overdue,
+.card-header-notice {
   padding: 8px 22px !important;
   border-top-left-radius: 4px !important;
   /* rounded-t */
@@ -620,6 +621,15 @@ textarea.form-input:disabled {
   color: #ffffff !important;
 }
 
+/* Notice. Purple because every other hue on a dashboard already means a
+   compliance status — teal assigned, orange pending, green approved, red
+   rejected, light blue overdue — and a notice is none of those. It carries no
+   status at all, so it gets the one colour that says nothing about one. */
+.card-header-notice {
+  background-color: #68b2f7 !important;
+  color: #ffffff !important;
+}
+
 /* ── Stat card flat color classes ── */
 .bg-c-info {
   background-color: #17a2b8 !important;
@@ -638,6 +648,13 @@ textarea.form-input:disabled {
 
 .bg-c-draft {
   background-color: #83a9df !important;
+  color: #ffffff !important;
+}
+
+/* Pairs with .card-header-notice, the way bg-c-info pairs with
+   .card-header-info — the card and the screen it opens wear one colour. */
+.bg-c-notice {
+  background-color: #68b2f7 !important;
   color: #ffffff !important;
 }
 
@@ -965,7 +982,8 @@ body.modal-open .z-\[9999\] * {
 .card-header-rejected h3,
 .card-header-info h3,
 .card-header-primary h3,
-.card-header-overdue h3 {
+.card-header-overdue h3,
+.card-header-notice h3 {
   color: #ffffff !important;
   font-weight: bold !important;
   font-size: 12px !important;
@@ -984,6 +1002,7 @@ body.modal-open .z-\[9999\] * {
 .card-header-info h3 i,
 .card-header-primary h3 i,
 .card-header-overdue h3 i,
+.card-header-notice h3 i,
 .custom-card-header h3 i,
 .custom-card-header1 h3 i {
   font-size: 13px !important;

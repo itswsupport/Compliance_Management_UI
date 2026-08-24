@@ -14,6 +14,8 @@ import { LS_KEYS } from '../../utils/constants';
 import { COUNT_STATUS_BY_PATH } from '../../utils/dashboardCounts';
 import { fetchComplianceRows, visibleRows, filterByPeriod, yearsIn } from '../../utils/complianceRows';
 import { enteredSection, sectionOf } from '../../utils/navSection';
+import { recordOpened } from '../../utils/recordOpened';
+import { getPeriod, setPeriod as setSharedPeriod, resetPeriod } from '../../utils/periodFilter';
 
 const MONTHS = [
   'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
@@ -42,9 +44,7 @@ const LIST_STATUS = {
   22: { label: 'Final Approval Pending', variant: 'warning' },
 };
 
-let sharedPeriod = { year: '', month: '' };
-
-// Who sharedPeriod belongs to — "<empCode>|<dashboard>". Logout does not reload
+// Who the shared period belongs to — "<empCode>|<dashboard>". Logout does not reload
 // the page, so without this the next user inherits the filter and card counts.
 let periodOwner = null;
 // Who the row cache belongs to — empCode only. Rows are deliberately KEPT when
@@ -74,13 +74,13 @@ export default function ComplianceListPage({
   const [calendarOpen, setCalendarOpen] = useState(false);
   // Due-date filter. '' means "all"; a month on its own spans every year.
   // One selection drives the table, the calendar AND every card's count, and
-  // it survives a move to another tab — see sharedPeriod.
-  const [period, setPeriodState] = useState(sharedPeriod);
+  // it survives a move to another tab, and the Notice Dashboard — see
+  // utils/periodFilter.
+  const [period, setPeriodState] = useState(getPeriod());
   const { year, month } = period;
 
   function setPeriod(next) {
-    sharedPeriod = next;
-    setPeriodState(next);
+    setPeriodState(setSharedPeriod(next));
   }
   // Router pathname, not window.location — the latter carries the "/compliance"
   // basename, which the nav card `to` values do not.
@@ -119,10 +119,11 @@ export default function ComplianceListPage({
     const ownerChanged = owner !== periodOwner;
     periodOwner = owner;
 
-    // Filter spans one dashboard's tabs only.
+    // Filter spans one dashboard's tabs only — and the Notice Dashboard, which
+    // records no section of its own, so a trip to the notices and back is not
+    // "arriving somewhere new" and does not clear what the user selected.
     if (arrived || ownerChanged) {
-      sharedPeriod = { year: '', month: '' };
-      setPeriodState(sharedPeriod);
+      setPeriodState(resetPeriod());
     }
 
     // Only a change of USER empties the cache. A change of dashboard keeps it,
@@ -149,6 +150,10 @@ export default function ComplianceListPage({
   function handleView(id) {
     localStorage.setItem(storageKey, id);
     setViewId(id);
+    // The one entry point for opening a record here — the eye on a row and a
+    // pick off the calendar both land in it — so telling the bell here covers
+    // both. It clears any notification pointing at this record.
+    recordOpened(id);
   }
 
   // Back out of the detail. Only an action that actually saved something can
@@ -318,15 +323,17 @@ export default function ComplianceListPage({
 
   const filtered = year !== '' || month !== '';
 
-  // Due-date filter, in its own bar under the cards. One selection narrows the
-  // whole dashboard: every card's count, the list below, and the calendar that
-  // takes the same slot. Rows whose due date cannot be read drop out while a
-  // filter is on, since they cannot be shown to satisfy the period.
+  // Period filter, in its own bar under the cards. It is labelled "Filter By
+  // Period" rather than "Due Date" because one selection narrows every tab —
+  // Pending, Approved, Rejected and Overdue alike — not just the due-date
+  // column: every card's count, the list below, and the calendar that takes
+  // the same slot. Rows whose due date cannot be read drop out while a filter
+  // is on, since they cannot be shown to satisfy the period.
   const filterBar = (
     <div className="card no-print px-3 py-1.5 flex flex-wrap items-center justify-between gap-2">
       <span className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">
         <i className="fas fa-filter mr-1.5 text-[#3482AE]" />
-        Due Date
+        Filter By Period
       </span>
       <div className="flex items-center gap-2">
         {filtered && (

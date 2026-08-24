@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { COUNT_STATUS_BY_PATH } from '../../utils/dashboardCounts';
+import { sectionOf } from '../../utils/navSection';
+import { getNoticeList } from '../../services/noticeService';
+import { filterNoticesByPeriod } from '../../utils/noticeRows';
 import { fetchComplianceRows, visibleRows, filterByPeriod } from '../../utils/complianceRows';
 
 
@@ -63,6 +66,16 @@ function PlusIcon() {
  * in the detail view) and by any full page load, so it cannot outlive a login.
  */
 const rowsCache = new Map();
+
+/**
+ * The one card that is not a compliance tab.
+ *
+ * It counts like the rest, but neither half of the machinery behind the others
+ * fits it: its rows come from notice/list rather than a compliance status
+ * query, and its period is the day a notice was published rather than a due
+ * date. Both are branched on this path.
+ */
+const NOTICE_PATH = '/notice/list';
 
 // The navbar bell reads these rows too, and nothing else would tell it they changed.
 const cacheListeners = new Set();
@@ -152,7 +165,7 @@ export default function DashboardNavCards({
     // already fetched this session is left alone — so a tab click refreshes
     // that tab's list alone.
     const targets = cards.filter(
-      (card) => COUNT_STATUS_BY_PATH[card.to] &&
+      (card) => (COUNT_STATUS_BY_PATH[card.to] || card.to === NOTICE_PATH) &&
         card.to !== pathname &&
         !rowsCache.has(card.to),
     );
@@ -162,7 +175,16 @@ export default function DashboardNavCards({
       const entries = await Promise.all(
         targets.map(async (card) => {
           try {
-            const list = await fetchComplianceRows(user, COUNT_STATUS_BY_PATH[card.to]);
+            if (card.to === NOTICE_PATH) {
+              // The server decides which notices this employee may see, so the
+              // count is whatever the dashboard behind the card would list.
+              const res = await getNoticeList(user.empCode);
+              return [card.to, res.data?.response || []];
+            }
+            // card.to, not the page we are standing on — the Notice Dashboard
+            // draws another dashboard's cards, and those rows must be fetched
+            // the way that dashboard fetches them.
+            const list = await fetchComplianceRows(user, COUNT_STATUS_BY_PATH[card.to], card.to);
             // Store what the tab would actually show, so the count and the list
             // behind it agree; the period filter is applied at render.
             return [card.to, visibleRows(list, card.to.includes('/pending'), user.empCode)];
@@ -187,7 +209,11 @@ export default function DashboardNavCards({
       onSameRoute?.(to);
       return;
     }
-    navigate(to);
+    // Which dashboard the click came from. Only the Notice Dashboard reads it,
+    // and it has to: that page belongs to no role, so it borrows a card row —
+    // and a user holding two roles would otherwise always get the row of their
+    // highest one, whichever dashboard they actually came from.
+    navigate(to, { state: { fromSection: sectionOf(pathname) } });
   }
 
   if (cards.length === 0) return null;
@@ -195,7 +221,11 @@ export default function DashboardNavCards({
   // Whole class names, not `md:grid-cols-${n}` — Tailwind generates CSS by
   // scanning source text, so a name assembled at runtime is never emitted and
   // the cards silently stack one per row.
-  const columnsCls = cards.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-4';
+  const columnsCls = cards.length === 3
+    ? 'md:grid-cols-3'
+    : cards.length >= 5
+    ? 'md:grid-cols-3 lg:grid-cols-5'
+    : 'md:grid-cols-4';
 
   return (
     <div className={`grid grid-cols-1 ${columnsCls} gap-4 no-print`}>
@@ -203,12 +233,13 @@ export default function DashboardNavCards({
         const cached = rows[card.to];
         // The host already applied the filter to its own card's rows; every
         // other card re-applies it here, against rows fetched once.
+        const narrow = card.to === NOTICE_PATH ? filterNoticesByPeriod : filterByPeriod;
         const count = card.to === pathname
           ? currentCount
-          : cached && filterByPeriod(cached, period?.year ?? '', period?.month ?? '').length;
+          : cached && narrow(cached, period?.year ?? '', period?.month ?? '').length;
         // Cards with a list behind them show the count, never an icon — showing
         // an icon first would flash and swap. Only Assign Compliance keeps one.
-        const countable = Boolean(COUNT_STATUS_BY_PATH[card.to]);
+        const countable = Boolean(COUNT_STATUS_BY_PATH[card.to]) || card.to === NOTICE_PATH;
         return (
           <div
             key={card.label}

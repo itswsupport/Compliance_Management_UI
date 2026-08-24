@@ -8,14 +8,21 @@ import { STATUS } from './constants';
 import { getDueDate } from './formatters';
 
 /**
- * Fetch a compliance list for the role whose dashboard we are on.
+ * Fetch a compliance list for the role a given dashboard belongs to.
  *
- * Shared by the list table and by the dashboard card counts — both need the
- * same call with a different status set, and every card on a page belongs to
- * the same role, so the current path is what picks the endpoint.
+ * Shared by the list table and by the dashboard card counts, which need the
+ * same call with a different status set.
+ *
+ * @param forPath the dashboard the rows are FOR — a card's `to`, not
+ *   necessarily the page being looked at. It used to read
+ *   window.location.pathname on the assumption that every card on a screen
+ *   belongs to that screen's role, which the Notice Dashboard broke: it belongs
+ *   to no role, matches none of the branches below, and so counted a Comp
+ *   Admin's cards through the user-level endpoint — 8 pending instead of 392.
+ *   Defaults to the current path, which is right for the list table.
  */
-export async function fetchComplianceRows(user, statuses) {
-  const path = window.location.pathname;
+export async function fetchComplianceRows(user, statuses, forPath) {
+  const path = forPath || window.location.pathname;
   let res;
   if (path.includes('/comp-admin/')) {
     res = await getComplianceList(user.empCode, statuses);

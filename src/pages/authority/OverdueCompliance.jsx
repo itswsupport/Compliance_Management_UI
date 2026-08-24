@@ -1,11 +1,7 @@
 import ComplianceListPage from '../../components/ui/ComplianceListPage';
+import { NAV_CARDS_BY_SECTION } from '../../utils/navCards';
 
-const NAV = [
-  { label: 'Pending Compliance',  icon: 'fas fa-spinner',      color: 'bg-c-pending', to: '/authority/pending'  },
-  { label: 'Approved Compliance', icon: 'fas fa-check-square', color: 'bg-c-green1',  to: '/authority/approved' },
-  { label: 'Rejected Compliance', icon: 'fas fa-times-circle', color: 'bg-c-reject',  to: '/authority/rejected' },
-  { label: 'Overdue Compliance',  icon: 'far fa-hourglass',    color: 'bg-c-draft',   to: '/authority/overdue'  },
-];
+const NAV = NAV_CARDS_BY_SECTION['authority'];
 
 export default function AuthorityOverdue() {
   return (

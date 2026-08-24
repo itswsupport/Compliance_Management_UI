@@ -3,13 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
 import { useShowBackButton } from '../../hooks/useShowBackButton';
-import { markComplianceRead } from '../../components/layout/NotificationBell';
 import {
   getComplianceById, getActionHistory, saveComplianceAction, getDownloadUrl,
 } from '../../services/complianceService';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { getDueDate, todayDate, currentTime, extractFilename } from '../../utils/formatters';
 import { LS_KEYS } from '../../utils/constants';
+import { ACCEPT, FILE_HINT, fileError } from '../../utils/attachments';
 
 // Pending-row authLevels each dashboard may act on — keeps a multi-role account
 // (e.g. Comp Admin + Comp Head) from acting on the wrong step.
@@ -74,6 +74,9 @@ export default function ComplianceView({ showAction = false, embedded = false, o
   const [comment, setComment] = useState('');
   const [compDate, setCompDate] = useState(todayDate());
   const [actionFile, setActionFile] = useState(null);
+  // Bumped after a rejected file so the input — which React cannot clear by
+  // value — is thrown away and remounted empty, the way Assign Compliance does.
+  const [fileKey, setFileKey]       = useState(0);
   const [selectedAction, setSelectedAction] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [actionErrors, setActionErrors] = useState({});
@@ -114,8 +117,19 @@ export default function ComplianceView({ showAction = false, embedded = false, o
         const c = res.data.response;
         setComp(c);
         localStorage.setItem(LS_KEYS.ID_COMP, c.id);
-        // Reading the record IS reading its notification, however it was opened.
-        markComplianceRead(user?.empCode ?? globalEmpCode, c.id);
+        // Opening the record deliberately does NOT clear its bell entry.
+        //
+        // It used to: "reading the record IS reading its notification, however
+        // it was opened". But a notification the user never saw is not one they
+        // have read — opening a rejected compliance from the list to see what
+        // happened silently consumed the very entry that was there to tell them,
+        // and the bell was empty by the time they looked at it. The mail flow
+        // does not delete a mail because the record behind it was viewed in the
+        // portal either.
+        //
+        // The entry is cleared by clicking it in the bell (openCompliance), and
+        // an action item disappears on its own once the user acts and its action
+        // row stops waiting.
 
         const hRes = await getActionHistory(c.id);
         const actions = hRes.data?.response || [];
@@ -164,6 +178,9 @@ export default function ComplianceView({ showAction = false, embedded = false, o
     if (isSubmitForm) {
       if (!comment.trim()) e.comment = 'Comment is required';
       if (!actionFile) e.attachment = 'Attachment is required';
+      // Checked again here, not only when the file was picked: the same rule
+      // the Assign Compliance form applies, and the same the server enforces.
+      else if (fileError(actionFile)) e.attachment = fileError(actionFile);
     } else {
       if (!selectedAction) e.selectedAction = 'Please select an action (APPROVE or REJECT).';
       if (!comment.trim()) e.comment = 'Please enter a comment.';
@@ -422,11 +439,24 @@ export default function ComplianceView({ showAction = false, embedded = false, o
                 <div className="form-group">
                   <label className="block text-[#3482AE] font-bold !text-[12px] mb-2 uppercase tracking-wide">UPLOAD ATTACHMENT</label>
                   <input
+                    key={fileKey}
                     type="file"
+                    accept={ACCEPT}
                     className="form-input text-xs h-9 bg-white cursor-pointer"
-                    onChange={(e) => setActionFile(e.target.files[0] || null)}
+                    onChange={(e) => {
+                      const file = e.target.files[0] || null;
+                      const problem = fileError(file);
+                      // A rejected file is not kept: leaving it in state would
+                      // show its name under an error, as though it were still
+                      // going.
+                      if (problem) setFileKey((k) => k + 1);
+                      setActionFile(problem ? null : file);
+                      setActionErrors((prev) => ({ ...prev, attachment: problem }));
+                    }}
                   />
-                  {actionErrors.attachment && <p className="text-red-500 text-xs mt-1">{actionErrors.attachment}</p>}
+                  {actionErrors.attachment
+                    ? <p className="text-red-500 text-xs mt-1">{actionErrors.attachment}</p>
+                    : <p className="text-xs text-gray-400 mt-1">{FILE_HINT}</p>}
                 </div>
                 <div className="form-group">
                   <label className="block text-[#3482AE] font-bold !text-[12px] mb-2 uppercase tracking-wide">COMMENT</label>

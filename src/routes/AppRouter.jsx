@@ -10,7 +10,7 @@ const PAGE_TITLES = {
   'overdue':       'Overdue Compliance',
   'rejected':      'Rejected Compliance',
   'view':          'Compliance View',
-  'assign':        'Assign Compliance',
+  'assign':        'Assign Compliance / Notice',
   'act-type':      'Compliance Act Category',
   'act-sub-type':  'Compliance Act Subcategory',
   'login-access':  'Login Access',
@@ -26,6 +26,10 @@ function RouteTitle() {
     let name;
     if (path.includes('/admin')) {
       name = 'Admin Settings';
+    } else if (path.includes('/notice')) {
+      // Special-cased like /admin: keying on the last segment would put a
+      // generic 'list' in the map, which any future route could claim.
+      name = 'Notice Dashboard';
     } else {
       const seg = path.split('/').filter(Boolean).pop() || '';
       name = PAGE_TITLES[seg] || 'Compliance Portal';
@@ -77,6 +81,10 @@ import AuthorityApproved from '../pages/authority/ApprovedCompliance';
 import AuthorityRejected from '../pages/authority/RejectedCompliance';
 import AuthorityOverdue  from '../pages/authority/OverdueCompliance';
 import AuthorityView     from '../pages/authority/ComplianceView';
+
+// Notice — read by every role, published by the Compliance Admin from the
+// dashboard itself (the Add Notice form is a card on it, not a page).
+import NoticeDashboard from '../pages/notice/NoticeDashboard';
 
 // Admin Settings
 import ActTypeMaster    from '../pages/adminSettings/ComplianceActTypeMaster';
@@ -146,6 +154,12 @@ export default function AppRouter() {
         <Route path="/authority/rejected" element={<ProtectedRoute><AuthorityRejected /></ProtectedRoute>} />
         <Route path="/authority/overdue"  element={<ProtectedRoute><AuthorityOverdue /></ProtectedRoute>} />
         <Route path="/authority/view"     element={<ProtectedRoute><AuthorityView /></ProtectedRoute>} />
+
+        {/* Notice — open to every role, one screen. /add is kept only so an old
+            link still lands somewhere sensible; the form is on the dashboard. */}
+        <Route path="/notice"      element={<ProtectedRoute><NoticeDashboard /></ProtectedRoute>} />
+        <Route path="/notice/list" element={<ProtectedRoute><NoticeDashboard /></ProtectedRoute>} />
+        <Route path="/notice/add"  element={<Navigate to="/notice/list" replace />} />
 
         {/* Admin Settings */}
         {/* Admin Settings opens on the first section; the nav cards sit above

@@ -3,29 +3,49 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
 import SearchableSelect from '../../components/ui/SearchableSelect';
-import DashboardNavCards, { clearCardCache } from '../../components/ui/DashboardNavCards';
+import DashboardNavCards, { clearCardCache, clearSectionCache } from '../../components/ui/DashboardNavCards';
 import {
   getPlantList, saveCompliance, getComplianceFlowStatus,
 } from '../../services/complianceService';
+import { saveNotice } from '../../services/noticeService';
 import {
   getActTypeList, getActSubTypeByActType,
 } from '../../services/adminService';
 import { todayDate, currentTime } from '../../utils/formatters';
 import { LS_KEYS, FREQUENCY_OPTIONS } from '../../utils/constants';
+import { ACCEPT, FILE_HINT, fileError } from '../../utils/attachments';
+import { getPeriod } from '../../utils/periodFilter';
+import { NAV_CARDS_BY_SECTION } from '../../utils/navCards';
 
-const NAV_CARDS = [
-  { label: 'Assign Compliance',  icon: 'fas fa-plus',         color: 'bg-c-info',    to: '/comp-admin/assign' },
-  { label: 'Pending Compliance', icon: 'fas fa-spinner',       color: 'bg-c-pending', to: '/comp-admin/pending' },
-  { label: 'Approved Compliance',icon: 'fas fa-check-square',  color: 'bg-c-green1',  to: '/comp-admin/approved' },
-  { label: 'Overdue Compliance', icon: 'far fa-hourglass',     color: 'bg-c-draft',   to: '/comp-admin/overdue' },
-];
+const NAV_CARDS = NAV_CARDS_BY_SECTION['comp-admin'];
 
 // Sentinel for the "all plants" row. Not a plant id, so it can never collide.
 const ALL_PLANTS = 'ALL';
 
+// The two things the Compliance Admin raises from this screen. One form serves
+// both — plant, category, subcategory and the document are the same question
+// either way. All the request type decides is where the form is sent: a
+// compliance into the approval flow it has always gone into, a notice straight
+// to the Plant HR and Group HR who read it.
+const REQUEST_TYPES = [
+  { value: 'COMPLIANCE', label: 'Compliance' },
+  { value: 'NOTICE',     label: 'Notice' },
+];
+
+// notice_subject is varchar(255); 250 leaves headroom. notice_desc is
+// varchar(2000). Both counts are shown, so the limit is never met as a
+// keystroke that silently does nothing.
+const SUBJECT_MAX = 250;
+const DESC_MAX    = 2000;
+
 export default function AssignCompliance() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Compliance, because that is what this screen is nearly always used for and
+  // what it has always been. The dropdown is still the first field, so raising
+  // a notice instead is one click — but the common case costs none.
+  const [requestType, setRequestType] = useState('COMPLIANCE');
 
   const [plants, setPlants]       = useState([]);
   const [actTypes, setActTypes]   = useState([]);
@@ -47,7 +67,14 @@ export default function AssignCompliance() {
     startDate: todayDate(),
     endDate: todayDate(),
     attachment: null,
+    // Notice only — a compliance has no description, the same way a notice has
+    // no frequency or due date.
+    noticeDesc: '',
   });
+
+  // Bumped after a rejected file so the input — which React cannot clear by
+  // value — is thrown away and remounted empty.
+  const [fileKey, setFileKey] = useState(0);
 
   useEffect(() => {
     Promise.all([getPlantList(), getActTypeList()]).then(([pRes, aRes]) => {
@@ -76,9 +103,32 @@ export default function AssignCompliance() {
     setSubTypes(res.data?.response || []);
   }
 
+  /**
+   * Switch the form between a compliance and a notice.
+   *
+   * Plant, category, subcategory and the document are shared, so whatever is
+   * already filled in stays. Two things do not survive the switch:
+   *
+   * - the errors, which belong to the half of the form that is going away;
+   * - the approval flow status, which is looked up per category and only for a
+   *   compliance. Picking the category as a notice never fetched one, so
+   *   switching to compliance has to fetch it now — otherwise the compliance
+   *   would save with an empty flow.
+   */
+  async function handleRequestTypeChange(val) {
+    setRequestType(val);
+    setErrors({});
+    if (val !== 'COMPLIANCE' || !form.compActType || !form.compActSubType) return;
+    const res = await getComplianceFlowStatus(form.compActType, form.compActSubType);
+    setForm((f) => ({ ...f, approvalFlowStatus: res.data?.response?.approvalFlowStatus || '' }));
+  }
+
   async function handleSubTypeChange(val) {
     setForm((f) => ({ ...f, compActSubType: val }));
     if (!form.compActType || !val) return;
+    // A notice has no approval flow — it is published and it is read — so there
+    // is no flow status to look up for one.
+    if (requestType === 'NOTICE') return;
     const res = await getComplianceFlowStatus(form.compActType, val);
     setForm((f) => ({ ...f, approvalFlowStatus: res.data?.response?.approvalFlowStatus || '' }));
   }
@@ -88,21 +138,103 @@ export default function AssignCompliance() {
     if (!form.plant)          e.plant = 'PLEASE SELECT PLANT';
     if (!form.compActType)    e.compActType = 'PLEASE SELECT COMPLIANCE CATEGORY';
     if (!form.compActSubType) e.compActSubType = 'PLEASE SELECT COMPLIANCE SUBCATEGORY';
-    if (!form.compFrequency)  e.compFrequency = 'PLEASE SELECT FREQUENCY';
-    if (form.compFrequency === 'AS & WHEN') {
-      if (!form.startDate) e.startDate = 'PLEASE SELECT START DATE';
-      if (!form.endDate)   e.endDate = 'PLEASE SELECT END DATE';
-    } else {
-      if (!form.firstDueDate) e.firstDueDate = 'PLEASE SELECT DUE DATE';
+
+    // A notice asks nothing beyond the shared fields. Everything in here is the
+    // compliance half, validating exactly as it always has.
+    if (requestType !== 'NOTICE') {
+      if (!form.compFrequency)  e.compFrequency = 'PLEASE SELECT FREQUENCY';
+      if (form.compFrequency === 'AS & WHEN') {
+        if (!form.startDate) e.startDate = 'PLEASE SELECT START DATE';
+        if (!form.endDate)   e.endDate = 'PLEASE SELECT END DATE';
+      } else {
+        if (!form.firstDueDate) e.firstDueDate = 'PLEASE SELECT DUE DATE';
+      }
     }
+
     if (!form.attachment) e.attachment = 'PLEASE SELECT FILE ATTACHMENT';
+    else if (fileError(form.attachment)) e.attachment = fileError(form.attachment);
     setErrors(e);
     return Object.keys(e).length === 0;
+  }
+
+  /**
+   * Send the form as a notice.
+   *
+   * No flow of any kind: one request, one save, and it is on the Notice
+   * Dashboard for the Plant HR and Group HR it was addressed to. ALL PLANTS is
+   * a flag rather than the fan-out a compliance does — the server still writes
+   * one row per plant, but a notice mails every compliance user, and 16
+   * requests would be 16 identical mails to each of them.
+   *
+   * The act masters name the category either way; on a notice those same two
+   * values are stored as the notice category and subcategory.
+   */
+  async function submitNotice() {
+    const allPlants = form.plant === ALL_PLANTS;
+
+    const fd = new FormData();
+    // notice_subject is NOT NULL on the server and it is the SUBJECT column the
+    // HRs read on the Notice Dashboard, but the form no longer asks for one.
+    // The subcategory is what the admin picked to say what this notice is
+    // about, so it is what the subject says too.
+    fd.append('noticeSubject', form.compActSubType.slice(0, SUBJECT_MAX));
+    fd.append('noticeDesc', form.noticeDesc.trim());
+    fd.append('allPlants', String(allPlants));
+    if (!allPlants) fd.append('plant', form.plant);
+    fd.append('noticeCategory', form.compActType);
+    fd.append('noticeSubCategory', form.compActSubType);
+    fd.append('regDate', todayDate());
+    fd.append('regTime', currentTime());
+    fd.append('empCode', user?.empCode || localStorage.getItem(LS_KEYS.GLOBAL_EMP_CODE));
+    // ...1, matching the server's param name — the entity already owns a String
+    // `noticeAttachment`, which the binder would claim first.
+    fd.append('noticeAttachment1', form.attachment);
+
+    setSaving(true);
+    try {
+      const res = await saveNotice(fd);
+      if (res.data?.status_code === 200) {
+        // Only the notice rows. A notice changes no compliance count, so
+        // clearing the whole cache made all four compliance cards refetch —
+        // and any number that had gone stale since it was first counted
+        // corrected itself right then, which read as the notice having
+        // changed it.
+        clearSectionCache('notice');
+        await Swal.fire({
+          title: res.data?.message || 'Notice Published Successfully.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        // Straight to the board the Plant HR and Group HR read it on.
+        navigate('/notice/list');
+      } else {
+        await Swal.fire({
+          title: res.data?.message || 'Notice Could Not Be Published',
+          icon: 'warning',
+          confirmButtonColor: '#42ba96',
+        });
+      }
+    } catch (err) {
+      // A refusal comes back with a non-2xx, which axios throws. Its body still
+      // carries the reason.
+      await Swal.fire({
+        title: err?.response?.data?.message || 'An error occurred while publishing the notice',
+        icon: 'error',
+        confirmButtonColor: '#42ba96',
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
+
+    // The one place the request type matters. Everything past this line is the
+    // compliance flow exactly as it was.
+    if (requestType === 'NOTICE') return submitNotice();
 
     const regDate = todayDate();
     const regTime = currentTime();
@@ -207,7 +339,9 @@ export default function AssignCompliance() {
     }
   }
 
-  const isAsWhen = form.compFrequency === 'AS & WHEN';
+  const isAsWhen     = form.compFrequency === 'AS & WHEN';
+  const isNotice     = requestType === 'NOTICE';
+  const isCompliance = requestType === 'COMPLIANCE';
 
   return (
     <div className="space-y-3">
@@ -219,19 +353,46 @@ export default function AssignCompliance() {
 
       {/* Nav cards — same component the list pages use, so the counts shown
           here are the ones already fetched rather than a second set. */}
-      <DashboardNavCards cards={NAV_CARDS} />
+      {/* period, like every other screen that draws these cards. This page has
+          no filter bar of its own, but the selection is one dashboard-wide
+          thing — without it the counts here were the unfiltered ones while
+          Pending, Approved, Overdue and the Notice Dashboard all showed
+          filtered ones, so the numbers appeared to change on their own when
+          moving between them. */}
+      <DashboardNavCards cards={NAV_CARDS} period={getPeriod()} />
 
       {/* Form card */}
       <div className="card">
         <div className="card-header-info">
           <h3>
-            <i className="fas fa-tasks" /> Assign Compliance
+            <i className={isNotice ? 'fas fa-bullhorn' : 'fas fa-tasks'} />{' '}
+            {isNotice ? 'Add Notice' : 'Assign Compliance'}
           </h3>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="p-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-5 gap-y-3">
+
+              {/* REQUEST TYPE — the first field, because it is the first thing
+                  the form needs to know. Nothing below it is asked until it is
+                  answered. */}
+              <div className="form-group">
+                <label className="form-label">REQUEST TYPE <span className="text-red-500 font-bold ml-0.5">*</span></label>
+                <SearchableSelect
+                  id="sel_request_type"
+                  value={requestType}
+                  placeholder="Select Request Type"
+                  searchable={false}
+                  optionClassName="text-gray-800"
+                  onChange={(val) => handleRequestTypeChange(val)}
+                  options={REQUEST_TYPES}
+                />
+              </div>
+
+              {/* Everything from here down is the same form for both types. The
+                  compliance-only and notice-only fields are marked where they
+                  appear; the rest is asked either way. */}
 
               {/* SELECT PLANT */}
               <div className="form-group">
@@ -260,7 +421,10 @@ export default function AssignCompliance() {
                 {errors.plant && <p className="text-red-500 text-[10px] mt-1">{errors.plant}</p>}
               </div>
 
-              {/* COMPLIANCE CATEGORY */}
+              {/* CATEGORY — the compliance act masters either way, and named
+                  after them either way. A notice stores the same two values as
+                  its category and subcategory, but the admin is picking from
+                  one list and it is labelled the same whichever way it goes. */}
               <div className="form-group">
                 <label className="form-label">COMPLIANCE CATEGORY</label>
                 <SearchableSelect
@@ -277,7 +441,7 @@ export default function AssignCompliance() {
                 {errors.compActType && <p className="text-red-500 text-[10px] mt-1">{errors.compActType}</p>}
               </div>
 
-              {/* COMPLIANCE SUBCATEGORY */}
+              {/* SUBCATEGORY */}
               <div className="form-group">
                 <label className="form-label">COMPLIANCE SUBCATEGORY</label>
                 <SearchableSelect
@@ -295,7 +459,8 @@ export default function AssignCompliance() {
                 {errors.compActSubType && <p className="text-red-500 text-[10px] mt-1">{errors.compActSubType}</p>}
               </div>
 
-              {/* FREQUENCY */}
+              {/* FREQUENCY — compliance only. A notice happens once. */}
+              {isCompliance && (
               <div className="form-group">
                 <label className="form-label">FREQUENCY</label>
                 <SearchableSelect
@@ -309,9 +474,11 @@ export default function AssignCompliance() {
                 />
                 {errors.compFrequency && <p className="text-red-500 text-[10px] mt-1">{errors.compFrequency}</p>}
               </div>
+              )}
 
-              {/* Conditional Date fields */}
-              {form.compFrequency && (
+              {/* Conditional Date fields — compliance only, for the same reason:
+                  a notice has no due date, only the day it went out. */}
+              {isCompliance && form.compFrequency && (
                 <>
                   {isAsWhen ? (
                     <>
@@ -414,18 +581,62 @@ export default function AssignCompliance() {
                 </>
               )}
 
-              {/* ATTACHMENT - Updated to plain text */}
+              {/* ATTACHMENT — the same field, the same words, either way. */}
               <div className="form-group">
                 <label className="form-label">
                   ATTACHMENT <span className="text-[#FF0000] ml-0.5 text-[11px] font-normal">(COMPLIANCE ACT/NOTIFICATION DOCUMENT.)</span> <span className="text-red-500 font-bold ml-0.5">*</span>
                 </label>
                 <input
+                  key={fileKey}
                   type="file"
+                  accept={ACCEPT}
                   className="form-input w-full bg-white"
-                  onChange={(e) => setForm((f) => ({ ...f, attachment: e.target.files[0] || null }))}
+                  onChange={(e) => {
+                    const file = e.target.files[0] || null;
+                    const problem = fileError(file);
+                    // A rejected file is not kept: leaving it in state would show
+                    // its name under an error, as though it were still going.
+                    if (problem) setFileKey((k) => k + 1);
+                    setForm((f) => ({ ...f, attachment: problem ? null : file }));
+                    setErrors((prev) => ({ ...prev, attachment: problem }));
+                  }}
                 />
-                {errors.attachment && <p className="text-red-500 text-[10px] mt-1">{errors.attachment}</p>}
+                {/* leading-4 on both, so the line under the file input is
+                    always exactly 20px tall whichever of the two is showing. */}
+                {errors.attachment
+                  ? <p className="text-red-500 text-[10px] leading-4 mt-1">{errors.attachment}</p>
+                  : <p className="text-[10px] leading-4 text-gray-400 mt-1">{FILE_HINT}</p>}
               </div>
+
+              {/* NOTICE DESCRIPTION — notice only, and optional. One column
+                  like every other field, not a full-width row, so it sits in
+                  the third column beside ATTACHMENT: a notice fills five cells
+                  before it, and this is the sixth.
+
+                  The comment box from Compliance View — same resize handle,
+                  same count over the right-hand corner — but sized to end level
+                  with the file input's hint line rather than at the h-32 that
+                  suited a full-width row. Still drag-resizable past that. */}
+              {isNotice && (
+              <div className="form-group">
+                <div className="flex items-baseline justify-between gap-2">
+                  <label className="form-label !mb-0">
+                    NOTICE DESCRIPTION
+                    <span className="text-gray-400 font-normal normal-case ml-1">(optional)</span>
+                  </label>
+                  <span className="text-[10px] text-gray-400 shrink-0 leading-none">
+                    {form.noticeDesc.length}/{DESC_MAX}
+                  </span>
+                </div>
+                <textarea
+                  className="form-input w-full bg-white text-xs h-[72px] pt-2 mt-1 resize-y min-h-[60px]"
+                  value={form.noticeDesc}
+                  maxLength={DESC_MAX}
+                  placeholder="ENTER NOTICE DESCRIPTION ..."
+                  onChange={(e) => setForm((f) => ({ ...f, noticeDesc: e.target.value.slice(0, DESC_MAX) }))}
+                />
+              </div>
+              )}
 
             </div>
           </div>

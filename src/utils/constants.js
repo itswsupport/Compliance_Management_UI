@@ -129,6 +129,11 @@ export const ENDPOINTS = {
   ACTION_SAVE:     'compliance_action/save',
   DELETE:          'compliance/delete',
   DOWNLOAD:        'download/file',
+  NOTICE_LIST:     'notice/list',                 // every role, read only
+  NOTICE_SAVE:     'notice/save',                 // Comp Admin only
+  NOTICE_DETAILS:  'notice/details/by_id',
+  NOTICE_DELETE:   'notice/delete',               // Comp Admin only
+  NOTICE_DOWNLOAD: 'notice/download/file',        // takes the notice id alone
 };
 
 // Add: per-role level info, since every legacy list() call passes a different level/authLevel

@@ -1,0 +1,2149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Compliance Management System — User Manual | RUCHA</title>
+<link rel="icon" type="image/png" href="../../Ruchapvtlogo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Exo:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   USER MANUAL — Compliance Management System
+   The figures on this page are not photographs: every screen is rebuilt from
+   the portal's own markup, colours and labels (see .ui-* rules below), so the
+   manual stays in step with the app instead of ageing like a screenshot.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --blue:#3482AE; --blue-d:#2A6B91; --orange:#fd9644; --green:#42ba96;
+  --red:#df4759; --draft:#83a9df; --info:#17a2b8; --ink:#243746; --mut:#5d7183;
+  --line:#dbe3ea; --page:#eef2f5; --call:#E8730C;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--page); color:var(--ink);
+  font-family:'Exo',"Segoe UI",system-ui,sans-serif; font-size:15px; line-height:1.6;
+}
+
+/* ── Page chrome ─────────────────────────────────────────────────────────── */
+.topbar{
+  position:sticky; top:0; z-index:50; background:var(--blue); color:#fff;
+  display:flex; align-items:center; gap:14px; padding:0 18px; height:52px;
+  box-shadow:0 2px 10px rgba(0,0,0,.18);
+}
+.topbar img{height:26px}
+.topbar b{font-size:14px; text-transform:uppercase; letter-spacing:.08em; font-weight:600}
+.topbar .sp{flex:1}
+.topbar a.btn{
+  background:rgba(255,255,255,.16); color:#fff; text-decoration:none; font-size:12px;
+  text-transform:uppercase; letter-spacing:.06em; padding:6px 12px; border-radius:3px;
+  border:1px solid rgba(255,255,255,.35); cursor:pointer;
+}
+.topbar a.btn:hover{background:rgba(255,255,255,.28)}
+.wrap{max-width:1240px; margin:0 auto; padding:26px 20px 80px}
+
+/* ── Cover ───────────────────────────────────────────────────────────────── */
+.cover{
+  background:linear-gradient(135deg,#2A6B91 0%,#3482AE 55%,#4a9fd0 100%);
+  color:#fff; border-radius:6px; padding:44px 46px; margin-bottom:26px;
+  box-shadow:0 6px 24px rgba(42,107,145,.30); position:relative; overflow:hidden;
+}
+.cover:after{
+  content:""; position:absolute; right:-70px; top:-70px; width:280px; height:280px;
+  border:38px solid rgba(255,255,255,.07); border-radius:50%;
+}
+.cover h1{margin:0; font-size:38px; line-height:1.15; font-weight:700; letter-spacing:.01em}
+.cover h2{margin:6px 0 0; font-size:19px; font-weight:400; opacity:.92}
+.cover .meta{margin-top:24px; display:flex; flex-wrap:wrap; gap:10px}
+.cover .meta span{
+  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
+  padding:5px 12px; border-radius:20px; font-size:12px; letter-spacing:.04em;
+}
+
+/* ── "Which of these are you?" role picker ───────────────────────────────── */
+/* Almost nobody reads a manual end to end — they read the one section that is
+   about their own job. This grid is that shortcut, put above the contents so
+   it is the first thing offered. */
+.roles{background:#fff; border:1px solid var(--line); border-radius:5px; padding:18px 22px 20px; margin-bottom:26px}
+.roles h3{margin:0 0 3px; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--mut)}
+.roles p.hint{margin:0 0 14px; font-size:13.5px; color:var(--mut); max-width:80ch}
+.rolegrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:12px}
+.rolecard{
+  display:block; text-decoration:none; color:inherit; background:#fbfdfe;
+  border:1px solid var(--line); border-left:4px solid var(--blue); border-radius:4px;
+  padding:11px 13px; transition:box-shadow .15s, transform .15s, border-color .15s;
+}
+.rolecard:hover{border-left-color:var(--call); box-shadow:0 3px 12px rgba(36,55,70,.14); transform:translateY(-1px)}
+.rolecard .r{font-size:14px; font-weight:700; color:var(--blue-d); display:flex; align-items:center; gap:9px}
+.rolecard .r i{color:var(--blue); width:16px; text-align:center; font-size:13px}
+.rolecard .d{font-size:12.5px; color:var(--mut); margin-top:5px; line-height:1.45}
+.rolecard .go{display:block; margin-top:8px; font-size:11px; font-weight:700; color:var(--call);
+              text-transform:uppercase; letter-spacing:.05em}
+
+/* ── Contents ────────────────────────────────────────────────────────────── */
+.toc{background:#fff; border:1px solid var(--line); border-radius:5px; padding:18px 22px; margin-bottom:26px}
+.toc h3{margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--mut)}
+.toc ol{margin:0; padding-left:20px; columns:2; column-gap:36px}
+.toc li{margin:7px 0; break-inside:avoid}
+.toc a{color:var(--blue); text-decoration:none; font-weight:600}
+.toc a:hover{text-decoration:underline}
+/* One line of "what is actually in here", so a reader picks the right section
+   the first time instead of opening three. */
+.toc .what{display:block; font-size:12.5px; color:var(--mut); font-weight:400; line-height:1.4}
+
+/* ── Search ──────────────────────────────────────────────────────────────── */
+.topbar .search{position:relative; display:flex; align-items:center}
+.topbar .search input{
+  width:236px; height:30px; border-radius:3px; font-family:inherit; font-size:13px;
+  border:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.16); color:#fff;
+  padding:0 28px 0 30px; outline:none;
+}
+.topbar .search input::placeholder{color:rgba(255,255,255,.75)}
+.topbar .search input:focus{background:rgba(255,255,255,.30); border-color:#fff}
+/* the browser's own clear cross would sit on top of ours */
+.topbar .search input::-webkit-search-cancel-button,
+.topbar .search input::-webkit-search-decoration{-webkit-appearance:none; appearance:none}
+.topbar .search .mag{position:absolute; left:10px; font-size:12px; opacity:.85; pointer-events:none}
+.topbar .search .clr{position:absolute; right:9px; font-size:13px; cursor:pointer; opacity:.85; display:none}
+.topbar .search .clr:hover{opacity:1}
+.searchinfo{
+  display:none; background:#fff7e8; border:1px solid #f0d5a4; border-left:4px solid var(--call);
+  border-radius:0 4px 4px 0; padding:10px 15px; margin-bottom:20px; font-size:13.5px; color:#7a5522;
+}
+.searchinfo b{color:#5c3f14}
+.searchinfo a{color:var(--blue); cursor:pointer; text-decoration:underline}
+mark.hit{background:#ffdf7e; color:inherit; border-radius:2px; padding:0 1px}
+.is-hidden{display:none !important}
+
+/* ── Back to contents ────────────────────────────────────────────────────── */
+/* Every section gets one of these injected next to its heading, so a reader who
+   has scrolled to section 11 is never more than one click from the map. */
+a.uptop{
+  margin-left:auto; font-size:11px; font-weight:600; color:var(--mut); text-decoration:none;
+  text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; align-self:center;
+}
+a.uptop:hover{color:var(--blue)}
+button.totop{
+  position:fixed; right:20px; bottom:22px; z-index:40; width:42px; height:42px; border-radius:50%;
+  background:var(--blue); color:#fff; border:none; cursor:pointer; font-size:15px; display:none;
+  align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.28);
+}
+button.totop:hover{background:var(--blue-d)}
+button.totop.on{display:flex}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+section{background:#fff; border:1px solid var(--line); border-radius:5px; padding:26px 30px 30px; margin-bottom:22px}
+section > h2{
+  margin:0 0 4px; font-size:21px; color:var(--blue); font-weight:700;
+  display:flex; align-items:baseline; gap:12px;
+}
+section > h2 .num{
+  font-size:12px; background:var(--blue); color:#fff; border-radius:3px;
+  padding:3px 8px; letter-spacing:.1em; position:relative; top:-2px;
+}
+section > .lead{color:var(--mut); margin:0 0 20px; font-size:15px; max-width:80ch}
+h3.sub{font-size:15px; color:var(--ink); margin:26px 0 8px; font-weight:700}
+h3.sub:first-of-type{margin-top:14px}
+p{max-width:85ch}
+ul.tight{margin:8px 0; padding-left:22px}
+ul.tight li{margin:4px 0; max-width:82ch}
+code.k{
+  background:#eef4f8; border:1px solid #d6e4ee; color:#1f5878; border-radius:3px;
+  padding:1px 6px; font-family:Consolas,monospace; font-size:.86em; white-space:nowrap;
+}
+
+/* Step list */
+ol.steps{counter-reset:s; list-style:none; margin:14px 0 0; padding:0}
+ol.steps > li{
+  counter-increment:s; position:relative; padding:0 0 14px 42px; margin:0;
+  border-left:2px dashed #d9e4ec; max-width:90ch;
+}
+ol.steps > li:last-child{border-left-color:transparent; padding-bottom:0}
+ol.steps > li:before{
+  content:counter(s); position:absolute; left:-15px; top:-2px; width:28px; height:28px;
+  background:var(--blue); color:#fff; border-radius:50%; display:flex;
+  align-items:center; justify-content:center; font-size:13px; font-weight:700;
+}
+ol.steps > li b{color:var(--blue-d)}
+
+/* Callout notes */
+.note{
+  border-left:4px solid var(--blue); background:#f2f8fc; padding:12px 16px;
+  border-radius:0 4px 4px 0; margin:16px 0; font-size:14px; max-width:88ch;
+}
+.note.warn{border-left-color:var(--orange); background:#fff6ee}
+.note.stop{border-left-color:var(--red); background:#fdf1f3}
+.note > b:first-child{display:block; margin-bottom:2px}
+
+/* Tables */
+table.doc{border-collapse:collapse; width:100%; margin:14px 0; font-size:13.5px}
+table.doc th{
+  background:var(--blue); color:#fff; text-align:left; padding:9px 12px;
+  font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.05em;
+}
+table.doc td{padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+table.doc tr:nth-child(even) td{background:#fafcfd}
+.pill{
+  display:inline-block; padding:2px 8px; border-radius:3px; font-size:11px;
+  font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap;
+}
+.p-warn{background:#FFC107; color:#1F2D3D} .p-ok{background:#42ba62} .p-no{background:#df4759}
+.p-info{background:#17a2b8} .p-pri{background:#3482AE}
+
+/* ── Figure frame ────────────────────────────────────────────────────────── */
+figure.fig{margin:22px 0 26px}
+/* A figure is drawn on a fixed 1180px canvas and then zoomed down to whatever
+   width it has to live in. `zoom` rather than `transform: scale()` on purpose:
+   zoom shrinks the layout box too, so the page (and the printer) reserve the
+   right height for it without any JavaScript being asked how tall it ended up. */
+.stage{position:relative; width:100%; overflow:hidden}
+.shot{
+  width:1180px; background:#fff;
+  border:1px solid #c9d6e0; border-radius:4px; box-shadow:0 3px 14px rgba(36,55,70,.16);
+  position:relative; overflow:hidden;
+  /* The portal renders EVERYTHING in capitals — src/index.css opens with a
+     global `* { text-transform: uppercase !important }` — so a figure drawn in
+     title case is not a picture of the app. One rule here does what that one
+     rule does there: menu entries read HOME / COMP ADMIN DASHBOARD / ADMIN
+     SETTINGS / LOGOUT, column headers and comment boxes follow, and the figure
+     data below stays written in ordinary case exactly as the portal's own JSX
+     does. The callouts are exempted underneath — those are this manual's voice,
+     not the app's. */
+  text-transform:uppercase;
+}
+/* Annotations are the manual talking, so they keep normal sentence case. They
+   are appended to .shot beside the mock, not inside it, hence a plain reset. */
+.shot > .call, .shot > .dot{text-transform:none}
+figcaption{
+  margin-top:10px; font-size:13px; color:var(--mut); border-left:3px solid var(--orange);
+  padding-left:10px; max-width:92ch;
+}
+figcaption b{color:var(--ink)}
+
+/* annotation layer */
+.anno{position:absolute; inset:0; pointer-events:none; z-index:6}
+.ring{
+  position:absolute; border:2.5px solid var(--call); border-radius:5px; z-index:5;
+  box-shadow:0 0 0 3px rgba(232,115,12,.16);
+}
+.call{
+  position:absolute; z-index:7; background:#fff; border:2px solid var(--call);
+  color:#1d2a34; font-size:14px; line-height:1.35; font-weight:600;
+  padding:7px 11px; border-radius:3px; box-shadow:0 2px 8px rgba(0,0,0,.14);
+}
+.call .n{
+  display:inline-flex; width:19px; height:19px; background:var(--call); color:#fff;
+  border-radius:50%; align-items:center; justify-content:center; font-size:11px;
+  margin-right:7px; position:relative; top:-1px;
+}
+.dot{
+  position:absolute; z-index:7; width:24px; height:24px; border-radius:50%;
+  background:var(--call); color:#fff; font-size:12.5px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 0 0 3px rgba(255,255,255,.9), 0 2px 6px rgba(0,0,0,.3);
+}
+/* legend under a numbered figure */
+ol.legend{margin:12px 0 0; padding:0; list-style:none; columns:2; column-gap:34px; font-size:13.5px}
+ol.legend li{counter-increment:lg; margin:5px 0; padding-left:30px; position:relative; break-inside:avoid}
+ol.legend{counter-reset:lg}
+ol.legend li:before{
+  content:counter(lg); position:absolute; left:0; top:1px; width:20px; height:20px;
+  background:var(--call); color:#fff; border-radius:50%; font-size:11px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* ══ MOCK APP UI — mirrors src/index.css and the layout components ═══════ */
+.ui{position:relative; height:100%; background:#f4f6f8; font-size:12px; color:#374151}
+.ui-side{position:absolute; left:0; top:0; bottom:0; width:230px; background:var(--blue); color:#fff}
+.ui-brand{height:40px; display:flex; align-items:center; gap:7px; padding:0 13px; border-bottom:1px solid rgba(255,255,255,.8)}
+.ui-brand img{height:20px; opacity:.9}
+.ui-brand span{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em}
+.ui-user{display:flex; align-items:center; gap:10px; padding:9px 13px; border-bottom:1px solid rgba(255,255,255,.8)}
+.ui-user img{width:44px; height:44px; border-radius:3px; background:#fff; padding:2px; object-fit:cover}
+.ui-user .n{font-size:11px; text-transform:uppercase; letter-spacing:.02em; line-height:1.35}
+.ui-user .r{font-size:11px; opacity:.9; text-transform:uppercase; letter-spacing:.06em}
+.ui-link{display:flex; align-items:center; gap:12px; padding:7px 14px; font-size:11.5px; color:#fff}
+.ui-link i{width:15px; text-align:center; font-size:12px}
+.ui-link.on{background:rgba(255,255,255,.15)}
+.ui-main{position:absolute; left:230px; right:0; top:0; bottom:0; display:flex; flex-direction:column}
+.ui-nav{
+  height:40px; background:var(--blue); color:#fff; display:flex; align-items:center;
+  justify-content:space-between; padding:0 14px 0 12px; border-bottom:1px solid rgba(255,255,255,.3); flex:none;
+}
+.ui-nav .rt{display:flex; align-items:center; gap:16px; font-size:11px; text-transform:uppercase}
+.ui-nav .rt span{display:flex; align-items:center; gap:5px}
+.ui-bell{position:relative}
+.ui-bell .bdg{
+  position:absolute; top:-7px; right:-9px; background:#df4759; color:#fff; border-radius:9px;
+  font-size:9px; padding:0 4px; min-width:15px; height:14px; display:flex;
+  align-items:center; justify-content:center; font-weight:700;
+}
+.ui-body{flex:1; padding:12px 14px; overflow:hidden}
+.ui-title{color:var(--blue); font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin:0 0 9px}
+.ui-cards{display:grid; grid-template-columns:repeat(var(--c,4),1fr); gap:13px; margin-bottom:11px}
+.ui-card{
+  height:70px; border-radius:3px; color:#fff; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:3px; box-shadow:0 1px 3px rgba(0,0,0,.15);
+}
+.ui-card .v{font-size:19px; font-weight:700; line-height:1}
+.ui-card i{font-size:23px}
+.ui-card h5{margin:0; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; font-weight:400}
+.c-pending{background:var(--orange)} .c-green{background:var(--green)}
+.c-draft{background:var(--draft)}   .c-red{background:var(--red)} .c-info{background:var(--info)}
+.c-notice{background:#68b2f7}
+.ui-filter{
+  background:#fff; border-radius:3px; padding:5px 11px; display:flex; align-items:center;
+  justify-content:space-between; margin-bottom:11px; box-shadow:0 1px 2px rgba(0,0,0,.08);
+}
+.ui-filter .lb{font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.06em}
+.ui-filter .sel{
+  border:1px solid #d1d5db; border-radius:2px; height:21px; min-width:96px; display:flex;
+  align-items:center; justify-content:space-between; padding:0 7px; font-size:10.5px; color:#374151; gap:8px;
+}
+.ui-cardbox{background:#fff; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,.11); overflow:hidden}
+.ui-h{padding:7px 18px; color:#fff; font-size:11.5px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.04em; display:flex; align-items:center; justify-content:space-between}
+.ui-h i{margin-right:6px}
+.h-pending{background:var(--orange)} .h-approved{background:var(--green)}
+.h-rejected{background:var(--red)}   .h-primary{background:var(--blue)}
+.h-info{background:var(--info)}      .h-overdue{background:var(--draft)}
+.h-notice{background:#68b2f7}
+.ui-cardbody{padding:12px 14px}
+.ui-tools{display:flex; gap:7px; margin-bottom:9px}
+.ui-btn{background:var(--blue); color:#fff; border-radius:2px; font-size:10px; padding:4px 9px;
+        text-transform:uppercase; letter-spacing:.04em; display:inline-flex; align-items:center; gap:5px}
+.ui-btn.gray{background:#6c757d} .ui-btn.red{background:var(--red)} .ui-btn.green{background:var(--green)}
+table.ui-t{width:100%; border-collapse:collapse; font-size:11px}
+table.ui-t th{background:#5a9ec9; color:#fff; padding:7px 8px; font-weight:600; text-align:center; white-space:nowrap}
+table.ui-t td{padding:6px 8px; text-align:center; border-bottom:1px solid #e5e7eb; color:#374151; white-space:nowrap}
+/* the Comp Admin / Authority lists carry ten or eleven columns — same table,
+   tighter. The cells are nowrap and .shot clips, so the padding is deliberately
+   mean: capitalised headers ("COMPLIANCE ACT SUB TYPE") are wider than the title
+   case they are written in, and eleven columns leave little room to spare. */
+table.ui-t.wide{font-size:9.6px}
+table.ui-t.wide th{padding:6px 2px; font-size:9px; letter-spacing:-.01em}
+table.ui-t.wide td{padding:5px 2px}
+.srno{background:#029eb9; color:#fff; border-radius:2px; font-size:10px; font-weight:700; padding:2px 6px; display:inline-flex; gap:4px; align-items:center}
+.bdg2{border-radius:2px; font-size:9.5px; font-weight:700; padding:2px 6px; color:#fff; text-transform:uppercase; letter-spacing:.02em}
+.b-warn{background:#FFC107; color:#1F2D3D} .b-ok{background:#42ba62} .b-no{background:#df4759}
+.b-info{background:#17a2b8} .b-pri{background:#3482AE}
+.ui-grid{display:grid; gap:10px 16px}
+.ui-f label{display:block; font-size:9.5px; font-weight:700; color:var(--blue); text-transform:uppercase; margin-bottom:3px; letter-spacing:.03em}
+.ui-in{height:24px; border:1px solid #ccc; border-radius:2px; background:#fff; font-size:10.5px;
+       display:flex; align-items:center; padding:0 7px; color:#374151; justify-content:space-between}
+.ui-in.ro{background:#E6F2FF}
+.ui-in.ph{color:#9aa5ae}
+.ui-ta{height:56px; border:1px solid #ccc; border-radius:2px; background:#fff; font-size:10.5px;
+       padding:5px 7px; color:#9aa5ae}
+.ui-foot{border-top:1px solid #e5e7eb; padding:10px; display:flex; justify-content:center; gap:9px; background:#F8F9FA}
+.req{color:#df4759; font-weight:700}
+
+@media (max-width:900px){ .toc ol, ol.legend{columns:1} .wrap{padding:16px 12px 60px} section{padding:20px 16px 24px} }
+/* On a narrow screen the search matters more than the two buttons beside it —
+   the buttons go first, and the field keeps its full width. */
+@media (max-width:860px){
+  .topbar{gap:10px; padding:0 12px}
+  .topbar b{font-size:12px}
+  .topbar a.btn{display:none}
+  .topbar .search input{width:180px}
+}
+@media (max-width:560px){
+  .topbar b{display:none}
+  .topbar .search input{width:100%}
+  .topbar .search{flex:1}
+}
+
+/* ── Print / Save as PDF ─────────────────────────────────────────────────── */
+@page{ size:A4 landscape; margin:11mm }
+@media print{
+  /* The figures ARE their colours — a screen with its blues and status badges
+     dropped is not a screenshot of anything. Force them through even when the
+     browser's "background graphics" box is unticked. */
+  .shot, .shot *, .cover, .pill, .p-warn, .p-ok, .p-no, .p-info, .p-pri,
+  table.doc th, .note, .call, .dot, .ring, figure.fig svg, figure.fig svg *{
+    -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important;
+  }
+  body{background:#fff}
+  /* On-screen navigation aids are worthless on paper — the page numbers and the
+     printed contents do that job. */
+  .topbar,.toc .hint,.roles,.searchinfo,.totop,a.uptop{display:none !important}
+  mark.hit{background:none}
+  .wrap{max-width:none; padding:0}
+  /* 5mm of left padding so the step numbers, which hang outside their list,
+     are not sliced off by the paper edge. */
+  section{break-inside:auto; break-before:page; border:none; box-shadow:none; padding:0 0 6mm 5mm; margin:0}
+  section:first-of-type{break-before:avoid}
+  .cover{break-after:page; box-shadow:none}
+  figure.fig, .note{break-inside:avoid}
+  table.doc tr{break-inside:avoid}
+  /* a heading must never be the last thing on a page */
+  section > h2, section > .lead, h3.sub, figcaption{break-after:avoid}
+  ol.legend li{break-inside:avoid}
+  /* A4 landscape less an 11mm margin each side is ~1039 CSS px of paper for a
+     1180px canvas. Fixed, and !important, because the on-screen value is inline. */
+  .shot{box-shadow:none; zoom:0.86 !important}
+  p, section > .lead, ul.tight li{max-width:none}
+  a{color:inherit; text-decoration:none}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar no-print">
+  <img src="../../RUCHA-LOGO-WHITE.png" alt="RUCHA" />
+  <b>Compliance Management System — User Manual</b>
+  <span class="sp"></span>
+  <span class="search">
+    <i class="fas fa-search mag"></i>
+    <input id="q" type="search" placeholder="Search the manual…" autocomplete="off" spellcheck="false" />
+    <i class="fas fa-times clr" id="qclr" title="Clear"></i>
+  </span>
+  <a class="btn" href="#toc"><i class="fas fa-list-ul"></i> &nbsp;Contents</a>
+  <a class="btn" onclick="window.print()"><i class="fas fa-print"></i> &nbsp;Print / Save as PDF</a>
+</div>
+
+<div class="wrap">
+
+  <div class="cover">
+    <h1>Compliance Management System</h1>
+    <h2>User Manual — how a compliance is assigned, submitted and approved</h2>
+    <div class="meta">
+      <span><i class="fas fa-building"></i> &nbsp;RUCHA Industries Ltd.</span>
+      <span><i class="fas fa-users"></i> &nbsp;Comp Admin · Plant HR / CHD · Comp Head · Corp HR · HCM Head · Authority</span>
+      <span><i class="fas fa-code-branch"></i> &nbsp;Covers Flow 1 and Flow 2</span>
+      <span><i class="fas fa-calendar-day"></i> &nbsp;Revision: August 2026</span>
+    </div>
+  </div>
+
+  <div class="roles no-print" id="roles">
+    <h3>Start here</h3>
+    <p class="hint">
+      You do not need to read this manual from front to back. Find your job below and go
+      straight to the section that shows it, step by step. Everything else is reference you
+      can come back to.
+    </p>
+    <div class="rolegrid">
+      <a class="rolecard" href="#s5">
+        <span class="r"><i class="fas fa-plus-circle"></i>Comp Admin</span>
+        <span class="d">I raise compliance requests and notices, and track them.</span>
+        <span class="go">Sections 5 &amp; 6 <i class="fas fa-arrow-right"></i></span>
+      </a>
+      <a class="rolecard" href="#s7">
+        <span class="r"><i class="fas fa-upload"></i>CHD</span>
+        <span class="d">I do the compliance and upload the proof (Flow&nbsp;1).</span>
+        <span class="go">Section 7 <i class="fas fa-arrow-right"></i></span>
+      </a>
+      <a class="rolecard" href="#s7">
+        <span class="r"><i class="fas fa-industry"></i>Plant HR</span>
+        <span class="d">I do the compliance for my plant and upload the proof (Flow&nbsp;2).</span>
+        <span class="go">Section 7 <i class="fas fa-arrow-right"></i></span>
+      </a>
+      <a class="rolecard" href="#s8">
+        <span class="r"><i class="fas fa-check"></i>Comp Head</span>
+        <span class="d">I give the first approval on Flow&nbsp;1.</span>
+        <span class="go">Section 8 <i class="fas fa-arrow-right"></i></span>
+      </a>
+      <a class="rolecard" href="#s9">
+        <span class="r"><i class="fas fa-check"></i>Group HR Head</span>
+        <span class="d">I give the first approval on Flow&nbsp;2 (Corp&nbsp;HR).</span>
+        <span class="go">Section 9 <i class="fas fa-arrow-right"></i></span>
+      </a>
+      <a class="rolecard" href="#s10">
+        <span class="r"><i class="fas fa-check-double"></i>HCM Head</span>
+        <span class="d">I give the final approval that closes a compliance.</span>
+        <span class="go">Section 10 <i class="fas fa-arrow-right"></i></span>
+      </a>
+      <a class="rolecard" href="#s11">
+        <span class="r"><i class="fas fa-eye"></i>Authority</span>
+        <span class="d">I only watch and export — I take no action.</span>
+        <span class="go">Section 11 <i class="fas fa-arrow-right"></i></span>
+      </a>
+      <a class="rolecard" href="#s12">
+        <span class="r"><i class="fas fa-bullhorn"></i>Notices</span>
+        <span class="d">I publish an announcement, or I read one that was sent to me.</span>
+        <span class="go">Section 12 <i class="fas fa-arrow-right"></i></span>
+      </a>
+      <a class="rolecard" href="#s15">
+        <span class="r"><i class="fas fa-life-ring"></i>Something is wrong</span>
+        <span class="d">A message I do not understand, or a record I cannot find.</span>
+        <span class="go">Section 15 <i class="fas fa-arrow-right"></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="searchinfo no-print" id="searchinfo"></div>
+
+  <div class="toc" id="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#s1">Who does what</a>
+        <span class="what">The seven roles, and which dashboard each one gets.</span></li>
+      <li><a href="#s2">The two approval flows</a>
+        <span class="what">One picture of the whole journey, from assigned to approved.</span></li>
+      <li><a href="#s3">Opening the portal</a>
+        <span class="what">Signing in — and what to do if you are refused.</span></li>
+      <li><a href="#s4">What is on your dashboard</a>
+        <span class="what">Every button and column named once, so the rest of this manual is short.</span></li>
+      <li><a href="#s5">Comp Admin — assigning a compliance</a>
+        <span class="what">Filling the Assign form, field by field.</span></li>
+      <li><a href="#s6">Comp Admin — tracking what you assigned</a>
+        <span class="what">The Pending, Approved and Overdue tabs, and deleting a mistake.</span></li>
+      <li><a href="#s7">CHD / Plant HR — submitting a compliance</a>
+        <span class="what">The doer's five steps: open, read, attach, comment, submit.</span></li>
+      <li><a href="#s8">Comp Head — first approval (Flow 1)</a>
+        <span class="what">Checking the evidence, then approving or rejecting with a reason.</span></li>
+      <li><a href="#s9">Group HR Head — first approval (Flow 2)</a>
+        <span class="what">The same job for compliances submitted by the plants.</span></li>
+      <li><a href="#s10">HCM Head — final approval</a>
+        <span class="what">The last signature — this is what closes a compliance.</span></li>
+      <li><a href="#s11">Authority — viewing compliances</a>
+        <span class="what">Read-only oversight of everything, and where each record is sitting.</span></li>
+      <li><a href="#s12">Notices</a>
+        <span class="what">Publishing a notice, who receives it, and reading one.</span></li>
+      <li><a href="#s13">Everyday tools</a>
+        <span class="what">The bell, the Time Period filter, search, export and the calendar.</span></li>
+      <li><a href="#s14">Status reference</a>
+        <span class="what">What every badge means and who has to act next.</span></li>
+      <li><a href="#s15">If something goes wrong</a>
+        <span class="what">Common messages and problems, with the fix for each.</span></li>
+    </ol>
+  </div>
+
+  <!-- ══════════════════════ 1. WHO DOES WHAT ══════════════════════ -->
+  <section id="s1">
+    <h2><span class="num">01</span> Who does what</h2>
+    <p class="lead">
+      Every screen in the portal belongs to a role. You only ever see the dashboard for the role
+      your employee code is mapped to — if you hold two roles, you get an entry in the left menu
+      for each of them.
+    </p>
+
+    <table class="doc">
+      <thead>
+        <tr><th style="width:16%">Role</th><th style="width:24%">Dashboard heading</th><th>What this role does</th><th style="width:24%">Tabs on the dashboard</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Comp Admin</b></td><td>COMPLIANCE ADMIN DASHBOARD</td>
+          <td>Raises every compliance request — assigns it to a plant with its category, frequency and due date — and tracks all of them afterwards. Also owns Admin Settings.</td>
+          <td>Assign · Pending · Approved · Overdue</td>
+        </tr>
+        <tr>
+          <td><b>CHD</b></td><td>CHD DASHBOARD</td>
+          <td>The doer on <b>Flow 1</b>. Records the compliance and uploads the proof document and comment.</td>
+          <td>Pending · Approved · Overdue</td>
+        </tr>
+        <tr>
+          <td><b>Plant HR</b></td><td>PLANT HR DASHBOARD</td>
+          <td>The doer on <b>Flow 2</b>, at the plant. Which Plant HR receives a request follows the <b>plant code</b> it was assigned to.</td>
+          <td>Pending · Approved · Overdue</td>
+        </tr>
+        <tr>
+          <td><b>Comp Head</b></td><td>COMPLIANCE HEAD DASHBOARD</td>
+          <td>First approval on <b>Flow 1</b> — approves or rejects what the CHD submitted.</td>
+          <td>Approval Pending · Approved · Rejected</td>
+        </tr>
+        <tr>
+          <td><b>Group HR Head</b><br />(Corp HR)</td><td>CORP HR COMPLIANCE DASHBOARD</td>
+          <td>First approval on <b>Flow 2</b> — approves or rejects what the plant submitted.</td>
+          <td>Approval Pending · Approved · Rejected</td>
+        </tr>
+        <tr>
+          <td><b>HCM Head</b></td><td>HCM HEAD COMPLIANCE DASHBOARD</td>
+          <td>Final approval in <i>both</i> flows. Nothing is closed until this step.</td>
+          <td>Approval Pending · Approved · Rejected</td>
+        </tr>
+        <tr>
+          <td><b>Authority</b></td><td>AUTHORITY DASHBOARD</td>
+          <td>Read-only oversight. Sees every request and where it is sitting, but takes no action.</td>
+          <td>Pending · Approved · Rejected · Overdue</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      <b>The dashboard heading tells you which role you are working as.</b>
+      A CHD user and a Plant HR user share the same screens, so the heading (and the left-menu
+      entry) reads <code class="k">CHD DASHBOARD</code> or <code class="k">PLANT HR DASHBOARD</code>
+      depending on who signed in.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 2. THE TWO FLOWS ══════════════════════ -->
+  <section id="s2">
+    <h2><span class="num">02</span> The two approval flows</h2>
+    <p class="lead">
+      A compliance always travels the same three stages — <b>assign → submit → approve</b> — but
+      <i>who</i> submits and <i>who</i> gives the first approval depends on the compliance
+      subcategory. That is set once per subcategory in Admin&nbsp;Settings (<code class="k">Approval Flow</code>
+      = Plant HR or Compliance Admin) and the Assign screen then picks it up on its own.
+    </p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 1180 500" style="width:100%;height:auto;background:#fff;border:1px solid #dbe3ea;border-radius:4px">
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="7.5" refY="3.2" orient="auto">
+            <path d="M0,0 L8,3.2 L0,6.4 z" fill="#3482AE"/>
+          </marker>
+          <marker id="ahr" markerWidth="9" markerHeight="9" refX="7.5" refY="3.2" orient="auto">
+            <path d="M0,0 L8,3.2 L0,6.4 z" fill="#df4759"/>
+          </marker>
+        </defs>
+        <style>
+          .bx{rx:4; ry:4}
+          .t{font-family:'Exo',sans-serif; font-size:13px; fill:#fff; font-weight:600; text-anchor:middle}
+          .ts{font-family:'Exo',sans-serif; font-size:11px; fill:#fff; text-anchor:middle; opacity:.92}
+          .lb{font-family:'Exo',sans-serif; font-size:12px; fill:#5d7183; text-anchor:middle}
+          .hd{font-family:'Exo',sans-serif; font-size:13px; font-weight:700; fill:#3482AE; text-anchor:middle; letter-spacing:.06em}
+          .rj{font-family:'Exo',sans-serif; font-size:11px; fill:#df4759; text-anchor:middle; font-weight:600}
+        </style>
+
+        <!-- start -->
+        <rect class="bx" x="450" y="20" width="280" height="52" fill="#17a2b8"/>
+        <text class="t" x="590" y="42">COMP ADMIN</text>
+        <text class="ts" x="590" y="60">Assign Compliance / Notice → Compliance: plant, category, due date</text>
+        <line x1="590" y1="72" x2="590" y2="104" stroke="#3482AE" stroke-width="2" marker-end="url(#ah)"/>
+
+        <rect class="bx" x="405" y="106" width="370" height="46" fill="#fff" stroke="#3482AE" stroke-width="1.5"/>
+        <text x="590" y="128" style="font-family:'Exo';font-size:12.5px;fill:#3482AE;font-weight:700;text-anchor:middle">Which approval flow is this subcategory on?</text>
+        <text x="590" y="144" style="font-family:'Exo';font-size:11px;fill:#5d7183;text-anchor:middle">set per subcategory in Admin Settings</text>
+
+        <line x1="480" y1="154" x2="300" y2="190" stroke="#3482AE" stroke-width="2" marker-end="url(#ah)"/>
+        <line x1="700" y1="154" x2="880" y2="190" stroke="#3482AE" stroke-width="2" marker-end="url(#ah)"/>
+
+        <!-- flow 1 -->
+        <text class="hd" x="295" y="170">FLOW 1 · COMPLIANCE ADMIN</text>
+        <rect class="bx" x="145" y="192" width="300" height="46" fill="#3482AE"/>
+        <text class="t" x="295" y="212">CHD submits</text>
+        <text class="ts" x="295" y="229">date of compliance + attachment + comment</text>
+        <line x1="295" y1="238" x2="295" y2="272" stroke="#3482AE" stroke-width="2" marker-end="url(#ah)"/>
+
+        <rect class="bx" x="145" y="274" width="300" height="46" fill="#3482AE"/>
+        <text class="t" x="295" y="294">COMP HEAD</text>
+        <text class="ts" x="295" y="311">1st approval — approve or reject</text>
+        <line x1="295" y1="320" x2="295" y2="354" stroke="#3482AE" stroke-width="2" marker-end="url(#ah)"/>
+
+        <!-- flow 2 -->
+        <text class="hd" x="885" y="170">FLOW 2 · PLANT HR</text>
+        <rect class="bx" x="735" y="192" width="300" height="46" fill="#3482AE"/>
+        <text class="t" x="885" y="212">PLANT HR submits</text>
+        <text class="ts" x="885" y="229">the Plant HR mapped to that plant code</text>
+        <line x1="885" y1="238" x2="885" y2="272" stroke="#3482AE" stroke-width="2" marker-end="url(#ah)"/>
+
+        <rect class="bx" x="735" y="274" width="300" height="46" fill="#3482AE"/>
+        <text class="t" x="885" y="294">GROUP HR HEAD (CORP HR)</text>
+        <text class="ts" x="885" y="311">1st approval — approve or reject</text>
+        <line x1="885" y1="320" x2="885" y2="354" stroke="#3482AE" stroke-width="2" marker-end="url(#ah)"/>
+
+        <!-- final -->
+        <rect class="bx" x="405" y="356" width="370" height="46" fill="#6f42c1"/>
+        <text class="t" x="590" y="376">HCM HEAD — FINAL APPROVAL</text>
+        <text class="ts" x="590" y="393">both flows end here</text>
+        <line x1="295" y1="356" x2="405" y2="380" stroke="#3482AE" stroke-width="2" marker-end="url(#ah)"/>
+        <line x1="885" y1="356" x2="775" y2="380" stroke="#3482AE" stroke-width="2" marker-end="url(#ah)"/>
+        <line x1="590" y1="402" x2="590" y2="428" stroke="#3482AE" stroke-width="2" marker-end="url(#ah)"/>
+
+        <rect class="bx" x="470" y="430" width="240" height="40" fill="#42ba96"/>
+        <text class="t" x="590" y="455">APPROVED — compliance closed</text>
+
+        <!-- reject returns -->
+        <path d="M145,297 C95,297 95,215 145,215" fill="none" stroke="#df4759" stroke-width="1.8"
+              stroke-dasharray="5 4" marker-end="url(#ahr)"/>
+        <text class="rj" x="48" y="248">Reject —</text>
+        <text class="rj" x="48" y="262">back to the</text>
+        <text class="rj" x="48" y="276">submitter</text>
+        <path d="M1035,297 C1085,297 1085,215 1035,215" fill="none" stroke="#df4759" stroke-width="1.8"
+              stroke-dasharray="5 4" marker-end="url(#ahr)"/>
+        <text class="rj" x="1132" y="248">Reject —</text>
+        <text class="rj" x="1132" y="262">back to the</text>
+        <text class="rj" x="1132" y="276">submitter</text>
+
+        <!-- final approval rejected: returns to whoever submitted it, on either flow -->
+        <path d="M440,356 C500,312 500,242 449,217" fill="none" stroke="#df4759" stroke-width="1.8"
+              stroke-dasharray="5 4" marker-end="url(#ahr)"/>
+        <path d="M740,356 C680,312 680,242 731,217" fill="none" stroke="#df4759" stroke-width="1.8"
+              stroke-dasharray="5 4" marker-end="url(#ahr)"/>
+        <text class="rj" x="590" y="272">Rejected at final approval —</text>
+        <text class="rj" x="590" y="286">back to the submitter too</text>
+      </svg>
+      <figcaption><b>Fig. 1</b> — The compliance workflow. The subcategory decides which of the two
+        middle columns a request travels; every request ends at HCM Head. A rejection — at the first
+        approval <i>or</i> at the final one — returns the compliance to whoever submitted it, on the
+        same flow it came down.</figcaption>
+    </figure>
+
+    <div class="note warn">
+      <b>A rejection is not the end of the request.</b>
+      Rejecting sends the compliance back to the person who submitted it. It reappears on their
+      <b>Pending</b> tab with the approver's comment in the Action History, ready to be corrected
+      and re-submitted.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 3. OPENING THE PORTAL ══════════════════════ -->
+  <section id="s3">
+    <h2><span class="num">03</span> Opening the portal</h2>
+    <p class="lead">
+      There is no separate password to remember. The Compliance Portal trusts the RUCHA portal
+      you are already signed in to.
+    </p>
+
+    <ol class="steps">
+      <li><b>Sign in to the RUCHA portal</b> as you normally do.</li>
+      <li><b>Open Compliance Management</b> from the portal's application list. The portal hands
+        your identity across and the Compliance Portal signs you in automatically — no second login screen.</li>
+      <li><b>You land on your role's dashboard.</b> Comp Admin opens on Overdue Compliance (which
+        leads with the Compliance Calendar); every other role opens on its Pending / Approval Pending tab.</li>
+    </ol>
+
+    <div class="note stop">
+      <b>"Access Denied" instead of a dashboard?</b>
+      Your employee code has no compliance role mapped to it yet. Ask the Comp Admin to add you in
+      <b>Admin Settings → Login Access</b>; nothing on your side will fix it.
+    </div>
+    <div class="note">
+      <b>Sessions time out.</b> After a spell of inactivity the portal signs you out and returns you
+      to the RUCHA portal. Re-open Compliance Management to carry on — nothing you had already
+      submitted is lost.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 4. ANATOMY ══════════════════════ -->
+  <section id="s4">
+    <h2><span class="num">04</span> What is on your dashboard</h2>
+    <p class="lead">
+      Every role's dashboard is built from the same parts. Learn them once here and the rest of
+      this manual is just "which button, on which tab".
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="anatomy"></div>
+      <figcaption><b>Fig. 2</b> — The Plant HR dashboard, with every common element numbered.
+        Other roles differ only in the heading, the colour of the list header and the tabs offered.</figcaption>
+      <ol class="legend">
+        <li><b>Menu button</b> — collapses the left menu to give the table more room.</li>
+        <li><b>Notification bell</b> — the number is how many compliances are waiting on <i>you</i>. Click to see them.</li>
+        <li><b>Help</b> — one click opens this user manual in a new tab.</li>
+        <li><b>Logout</b> — ends the session and returns you to the RUCHA portal.</li>
+        <li><b>Your name and role</b> — confirms which role's screens you are looking at.</li>
+        <li><b>Left menu</b> — one entry per role you hold, plus Admin Settings for Comp Admin.</li>
+        <li><b>Tab cards</b> — the number on each card is how many records that tab holds. Click a card to open that tab.</li>
+        <li><b>Time Period filter</b> — narrows the table <i>and</i> every card count to one year and/or month.</li>
+        <li><b>List card</b> — the records themselves. Click the blue serial number to open a compliance.</li>
+      </ol>
+    </figure>
+
+    <h3 class="sub">Reading the table</h3>
+    <ul class="tight">
+      <li><b>Compliance Sr. No</b> — the record's identity, e.g. <code class="k">1003/08/26/936</code>
+        (plant code / month / year / serial). Click it to open the compliance.</li>
+      <li><b>Due Date</b> — the date the compliance must be completed by. For an
+        <code class="k">AS &amp; WHEN</code> compliance this is the end date of its window.</li>
+      <li><b>Status</b> — where the record is right now. When something is waiting on <i>you</i>, the
+        badge says so from your point of view (<span class="pill p-warn">Submission Pending</span>,
+        <span class="pill p-warn">Pending</span>, <span class="pill p-warn">Final Approval Pending</span>);
+        otherwise it shows the record's own state. The full list is in
+        <a href="#s14">section 14</a>.</li>
+    </ul>
+
+    <div class="note">
+      <b>Counts and lists always agree.</b> The number on a card is exactly what you will see when you
+      open that tab, including the Time Period filter — so if a card shows 12 and the list shows 12 rows,
+      nothing is hidden.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 5. ASSIGN ══════════════════════ -->
+  <section id="s5">
+    <h2><span class="num">05</span> Comp Admin — assigning a compliance</h2>
+    <p class="lead">
+      Assigning is how a compliance enters the system. You choose the plant, what the compliance is,
+      how often it recurs and when it is due, and attach the act or notification document. The
+      portal works out who it goes to and tells them.
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="admin-dash"></div>
+      <figcaption><b>Fig. 3</b> — Comp Admin dashboard. The first card opens the assignment form;
+        the other three are the tabs where the request will show up afterwards.</figcaption>
+    </figure>
+
+    <h3 class="sub">Filling the form</h3>
+    <figure class="fig">
+      <div class="stage" data-fig="assign-form"></div>
+      <figcaption><b>Fig. 4</b> — Assign Compliance / Notice. Fields marked <span class="req">*</span> must be
+        filled; the form refuses to submit until they are, and shows the reason under the field.</figcaption>
+    </figure>
+
+    <ol class="steps">
+      <li><b>Select Plant</b> <span class="req">*</span> — start typing to search the list.
+        Choose <code class="k">ALL PLANTS</code> to raise the same compliance for every plant in one go
+        (see the note below).</li>
+      <li><b>Compliance Category</b> — the act, e.g. <i>LABOR LAWS</i>. Choosing one loads the
+        subcategories that belong to it.</li>
+      <li><b>Compliance Subcategory</b> — the specific requirement. This is also what decides the
+        approval flow, and so who has to do the work: the Compliance&nbsp;Admin route
+        (Flow&nbsp;1 — CHD submits, Comp&nbsp;Head approves) or the Plant&nbsp;HR route
+        (Flow&nbsp;2 — the plant's Plant&nbsp;HR submits, Group&nbsp;HR&nbsp;Head approves).</li>
+      <li><b>Frequency</b> — Yearly, Half-Yearly, Quarterly or Monthly.</li>
+      <li><b>Due Date</b> — click the box to open the calendar picker. Past dates cannot be chosen.
+        For an <code class="k">AS &amp; WHEN</code> compliance you get a <b>Start Date</b> and an
+        <b>End Date</b> instead of a single due date.</li>
+      <li><b>Attachment</b> <span class="req">*</span> — the compliance act or notification document.
+        This is what the doer reads to know what is expected of them, so it is mandatory.</li>
+      <li><b>Submit.</b> A confirmation appears and you are taken to the <b>Pending Compliance</b> tab
+        with the new request at the top of the list.</li>
+    </ol>
+
+    <div class="note warn">
+      <b>ALL PLANTS raises one request per plant, one after another.</b>
+      The button shows <i>"Assigning 3 of 16…"</i> while it works — let it finish. If a plant has no
+      Plant&nbsp;HR mapped, that plant is skipped and named in the summary; the rest are still created.
+    </div>
+    <div class="note">
+      <b>What the doer sees.</b> The moment you submit, the compliance appears on the doer's Pending
+      tab with the badge <span class="pill p-warn">Submission Pending</span>, their notification bell
+      count goes up, and they are e-mailed.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 6. TRACKING ══════════════════════ -->
+  <section id="s6">
+    <h2><span class="num">06</span> Comp Admin — tracking what you assigned</h2>
+    <p class="lead">
+      The three remaining cards are the life of a request: waiting, finished, and late.
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="admin-pending"></div>
+      <figcaption><b>Fig. 5</b> — Pending Compliance. Everything still moving through the flow is here,
+        with <b>Pending At</b> naming the person it is sitting with.</figcaption>
+    </figure>
+
+    <table class="doc">
+      <thead><tr><th style="width:22%">Tab</th><th>What it holds</th></tr></thead>
+      <tbody>
+        <tr><td><b>Pending Compliance</b></td>
+            <td>Assigned but not yet closed — awaiting submission, awaiting an approval, or rejected and
+                waiting to be corrected. The <b>Pending At</b> column tells you who is holding it up.</td></tr>
+        <tr><td><b>Approved Compliance</b></td>
+            <td>Finished — approved all the way through HCM Head. Nothing further is required.</td></tr>
+        <tr><td><b>Overdue Compliance</b></td>
+            <td>Past its due date and still not closed. This tab opens with the
+                <b>Compliance Calendar</b> (see <a href="#s13">section 13</a>).</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub">Deleting a request</h3>
+    <p>
+      Only the Comp Admin's Pending tab carries a <i class="fas fa-trash" style="color:#df4759"></i>
+      <b>delete</b> button, and it is meant for a request raised in error — a wrong plant, a wrong
+      subcategory. You are asked to confirm before anything is removed.
+    </p>
+    <div class="note stop">
+      <b>Delete cannot be undone.</b> The request and its history go with it. If work has already been
+      submitted against a compliance, reject it back to the doer with a comment instead of deleting it.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 7. SUBMIT ══════════════════════ -->
+  <section id="s7">
+    <h2><span class="num">07</span> CHD / Plant HR — submitting a compliance</h2>
+    <p class="lead">
+      This is the doer's job: do what the compliance requires, then record it here with the proof.
+      The <b>CHD</b> does this on Flow&nbsp;1 and the <b>Plant HR</b> of the assigned plant code does it
+      on Flow&nbsp;2 — the screen and the steps are the same for both, only the heading differs.
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="phr-dash"></div>
+      <figcaption><b>Fig. 6</b> — Plant HR dashboard, Pending Compliance. The CHD dashboard is the
+        same screen under a different heading. Records showing
+        <span class="pill p-warn">Submission Pending</span> are waiting for you.</figcaption>
+    </figure>
+
+    <ol class="steps">
+      <li><b>Open the compliance</b> — click the blue serial number. The list is replaced by the
+        compliance detail; <b>BACK TO LIST</b> in the header returns you.</li>
+      <li><b>Read section 1, Compliance Act Details</b> — what is required, for which plant, by when.
+        Click the <b>Attachment</b> box to download the act or notification document.</li>
+      <li><b>Check section 2, Action History</b> — every step taken so far, newest at the bottom.
+        If this compliance was rejected earlier, the approver's reason is the comment on that row.</li>
+      <li><b>Fill section 3, Action</b> — the date the compliance was actually completed, the proof
+        document, and a comment describing what was done. All three are required.</li>
+      <li><b>Submit.</b> The compliance leaves your Pending tab and moves to the first approver —
+        Comp&nbsp;Head on Flow&nbsp;1, Group&nbsp;HR&nbsp;Head (Corp&nbsp;HR) on Flow&nbsp;2.</li>
+    </ol>
+
+    <figure class="fig">
+      <div class="stage" data-fig="phr-view"></div>
+      <figcaption><b>Fig. 7</b> — The compliance detail with the submission form open. The
+        <b>3.ACTION</b> card only appears when this compliance is genuinely waiting on you.</figcaption>
+    </figure>
+
+    <div class="note warn">
+      <b>No 3.ACTION card?</b> Then nothing is required of you on this record — it is with someone else,
+      or already closed. Opening a compliance from the Approved tab is always read-only.
+    </div>
+    <div class="note">
+      <b>Overdue tab.</b> A compliance past its due date moves to <b>Overdue</b>, but it does not go
+      away: you submit it from there in exactly the same way.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 8. COMP HEAD ══════════════════════ -->
+  <section id="s8">
+    <h2><span class="num">08</span> Comp Head — first approval (Flow 1)</h2>
+    <p class="lead">
+      Everything the CHD submits stops with you before it can reach the HCM Head.
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="head-dash"></div>
+      <figcaption><b>Fig. 8</b> — Comp Head dashboard. <b>Approval Pending</b> is your work list;
+        Approved and Rejected are the record of what you decided.</figcaption>
+    </figure>
+
+    <ol class="steps">
+      <li><b>Open the record</b> from the Approval Pending tab.</li>
+      <li><b>Check the evidence</b> — section 2, Action History, holds the submitter's comment and
+        their attachment. Click the file name to download it.</li>
+      <li><b>Choose APPROVE or REJECT</b> in section 3 and <b>enter a comment</b> — the comment is
+        required either way, and it is what the next person (or the submitter, if you reject) reads.</li>
+      <li><b>Submit.</b> Approve sends it to HCM Head for final approval; Reject sends it back to the
+        submitter to be corrected and re-submitted.</li>
+    </ol>
+
+    <figure class="fig">
+      <div class="stage" data-fig="head-action"></div>
+      <figcaption><b>Fig. 9</b> — The approver's version of section 3: a choice and a comment,
+        no upload.</figcaption>
+    </figure>
+
+    <div class="note">
+      <b>Approving does not close the compliance.</b> It moves to
+      <span class="pill p-warn">Final Approval Pending</span> and appears on the HCM Head's list. It is
+      only finished when they approve it too.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 9. CORP HR ══════════════════════ -->
+  <section id="s9">
+    <h2><span class="num">09</span> Group HR Head (Corp HR) — first approval (Flow 2)</h2>
+    <p class="lead">
+      Your role is the Comp Head's opposite number on Flow&nbsp;2: you approve what the plants submit,
+      for every plant mapped to you. The portal labels your dashboard
+      <b>CORP HR COMPLIANCE DASHBOARD</b>.
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="corp-dash"></div>
+      <figcaption><b>Fig. 10</b> — The Group HR Head's dashboard, Approval Pending.</figcaption>
+    </figure>
+
+    <p>
+      The steps are identical to <a href="#s8">section 8</a>: open the record, read the plant's comment
+      and download their attachment from the Action History, then choose <b>APPROVE</b> or <b>REJECT</b>
+      with a comment. Approving passes it to HCM Head; rejecting returns it to the plant.
+    </p>
+
+    <div class="note warn">
+      <b>Reject with a usable reason.</b> Your comment is the only instruction the plant gets. "Wrong
+      document — challan required, not the receipt" saves a round trip; "not ok" does not.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 10. HCM HEAD ══════════════════════ -->
+  <section id="s10">
+    <h2><span class="num">10</span> HCM Head — final approval</h2>
+    <p class="lead">
+      Both flows end at your desk. Approving here closes the compliance for good.
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="hcm-dash"></div>
+      <figcaption><b>Fig. 11</b> — HCM Head dashboard. Records reach this list only after the first
+        approver has already passed them.</figcaption>
+    </figure>
+
+    <ol class="steps">
+      <li><b>Open the record</b> from Approval Pending.</li>
+      <li><b>Read the whole chain</b> in Action History — who submitted, what they attached, and what
+        the first approver said. Every step is on that one table.</li>
+      <li><b>Approve or reject with a comment.</b> Approve marks the compliance
+        <span class="pill p-ok">Approved</span> and moves it to everyone's Approved tab. Reject sends it
+        all the way back to the original submitter.</li>
+    </ol>
+  </section>
+
+  <!-- ══════════════════════ 11. AUTHORITY ══════════════════════ -->
+  <section id="s11">
+    <h2><span class="num">11</span> Authority — viewing compliances</h2>
+    <p class="lead">
+      The Authority dashboard is for oversight. You can see and export everything; you are never asked
+      to act, and no action form is offered when you open a record.
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="auth-dash"></div>
+      <figcaption><b>Fig. 12</b> — Authority dashboard. The extra <b>Action Pending</b> column names
+        the person each record is currently sitting with.</figcaption>
+    </figure>
+
+    <ul class="tight">
+      <li><b>Pending</b> — everything still in flight, with who is holding it.</li>
+      <li><b>Approved</b> — closed compliances, and those already cleared by the first approver and
+        awaiting final approval.</li>
+      <li><b>Rejected</b> — sent back for correction, with the reason in the record's Action History.</li>
+      <li><b>Overdue</b> — past due and still open. This is the tab to watch.</li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════ 12. NOTICES ══════════════════════ -->
+  <section id="s12">
+    <h2><span class="num">12</span> Notices</h2>
+    <p class="lead">
+      A notice is an announcement, not a task. It is published once, it reaches the people responsible
+      for the plants it names, and it is read. Nobody submits it, nobody approves it, and it never
+      appears on anyone's Pending list.
+    </p>
+
+    <div class="note">
+      <b>A notice is not a compliance</b>
+      Everything else in this manual describes work that moves through an approval flow. A notice has
+      no flow at all — no due date, no frequency, no approver, no status. If something needs an action
+      from somebody, it is a compliance, not a notice.
+    </div>
+
+    <h3 class="sub">Publishing a notice — Comp Admin</h3>
+    <p>
+      Notices are raised from the same screen as compliances. Open
+      <b>Assign Compliance / Notice</b> and set the first field, <b>Request Type</b>, to
+      <code class="k">Notice</code>. The form below it changes to suit.
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="notice-form"></div>
+      <figcaption><b>Fig. 13</b> — The same Assign screen with <b>Request Type</b> set to
+        <b>Notice</b>. Frequency and Due Date are gone; a Notice Description takes their place.
+        Fields marked <span class="req">*</span> must be filled.</figcaption>
+    </figure>
+
+    <ol class="steps">
+      <li><b>Request Type</b> <span class="req">*</span> — choose <code class="k">Notice</code>.
+        It opens on <code class="k">Compliance</code>, which is the everyday case.</li>
+      <li><b>Select Plant</b> <span class="req">*</span> — one plant, or
+        <code class="k">ALL PLANTS</code> to publish to every plant at once.</li>
+      <li><b>Compliance Category</b> and <b>Compliance Subcategory</b> — the same two lists the
+        compliance form uses. They say what the notice is about, and the subcategory becomes the
+        notice's <b>Subject</b>.</li>
+      <li><b>Attachment</b> <span class="req">*</span> — the document itself: PDF, Excel, JPG or PNG,
+        up to 50 MB. File names may use letters, numbers, spaces and <code class="k">. - _ ( )</code>
+        only.</li>
+      <li><b>Notice Description</b> — optional. A short line of context, shown in the mail and on the
+        board.</li>
+      <li><b>Submit</b> — the notice is published immediately and the mails go out. There is no
+        confirmation step, because there is nothing to approve.</li>
+    </ol>
+    <p>
+      There is no <b>Frequency</b> and no <b>Due Date</b> on a notice: it happens once. Everything else
+      on the form behaves exactly as it does for a compliance (see
+      <a href="#s5">section 5</a>).
+    </p>
+
+    <h3 class="sub">Who receives a notice</h3>
+    <p>
+      The recipients are read from the plant's row in the reporting grid — the same mapping the
+      approval flow uses to decide who approves a compliance. Nobody is chosen by hand.
+    </p>
+    <table class="doc">
+      <tr><th>Role</th><th>Receives a notice for…</th></tr>
+      <tr><td><b>Plant HR</b></td><td>the plant they are mapped to</td></tr>
+      <tr><td><b>Group HR Head</b> (Corp HR)</td><td>the plants they are mapped to</td></tr>
+      <tr><td><b>Comp Head</b></td><td>the plants they are mapped to</td></tr>
+      <tr><td><b>HCM Head</b></td><td>the plants they are mapped to</td></tr>
+      <tr><td><b>CHD</b></td><td>the plants they are mapped to</td></tr>
+      <tr><td><b>Authority</b></td><td>every notice, whichever plant it names</td></tr>
+      <tr><td><b>Comp Admin</b></td><td>nothing — the admin publishes notices and reads them all on
+        the dashboard, so mailing them back would be telling them what they just did</td></tr>
+    </table>
+
+    <div class="note">
+      <b>One mail per person, not one per plant</b>
+      If you cover seven plants and a notice goes to <code class="k">ALL PLANTS</code>, you get
+      <b>one</b> mail listing your seven plants — not seven mails, and not a mail naming all eighteen.
+      This is the opposite of a compliance: an <code class="k">ALL PLANTS</code> compliance creates a
+      separate record per plant, each with its own Sr. No. and its own approval chain, so it sends you
+      one mail per plant.
+    </div>
+
+    <h3 class="sub">Reading notices — everybody</h3>
+    <figure class="fig">
+      <div class="stage" data-fig="notice-dash"></div>
+      <figcaption><b>Fig. 14</b> — The Notice Dashboard. Every role reaches it from the
+        <b>NOTICE</b> card on their own dashboard; the board itself is read-only.</figcaption>
+    </figure>
+    <ul class="tight">
+      <li>Open it from the <b>NOTICE</b> card on any dashboard. The number on the card is how many
+        notices you can currently see.</li>
+      <li>The table lists the notice number, subject, description, plant, category, who published it
+        and when. <b>ALL PLANTS</b> in the plant column means the notice went to every plant.</li>
+      <li><i class="fas fa-eye" style="color:#3482AE"></i> opens the attached document in a new tab;
+        <i class="fas fa-download" style="color:#42ba96"></i> saves it. The document is not attached to
+        the mail — it lives here.</li>
+      <li>The <b>Filter By Period</b> bar narrows the list by the date a notice was
+        <b>published</b>. It is the same filter the compliance dashboards use, and a year or month you
+        pick here still applies when you click back to a compliance tab.</li>
+      <li><b>EXCEL / PDF / PRINT</b> export exactly what the table currently shows.</li>
+    </ul>
+
+    <h3 class="sub">The bell</h3>
+    <p>
+      A new notice raises a bell notification for everyone it was sent to, shown with a
+      <i class="fas fa-bullhorn" style="color:#68b2f7"></i> icon. Clicking it opens the Notice
+      Dashboard. Because the board shows every notice at once, <b>opening it marks them all read</b>
+      and the count clears — unlike a compliance notification, which clears only when you open that
+      particular record.
+    </p>
+
+    <h3 class="sub">Withdrawing a notice — Comp Admin</h3>
+    <p>
+      Published something by mistake? Open the Notice Dashboard <b>from the Comp Admin dashboard</b>
+      and each row carries a <span class="req"><i class="fas fa-trash"></i></span> button. It asks to
+      confirm, then removes the notice for everybody — all its plant rows, its document, and the bell
+      notifications that announced it.
+    </p>
+    <div class="note warn">
+      <b>Withdrawing is permanent, and the mail has already gone</b>
+      There is no undo and no draft state. Removing a notice takes it off every dashboard, but it
+      cannot recall the mail people have already received — if the notice was wrong, publish a
+      correction as well.
+    </div>
+    <p>
+      The button appears only when you reach the board from the Comp Admin dashboard. If you hold
+      another role as well and arrive from that dashboard instead, the board is read-only — which is
+      what everybody else always sees.
+    </p>
+  </section>
+
+  <!-- ══════════════════════ 13. TOOLS ══════════════════════ -->
+  <section id="s13">
+    <h2><span class="num">13</span> Everyday tools</h2>
+    <p class="lead">
+      These work the same way on every dashboard, whichever role you hold.
+    </p>
+
+    <h3 class="sub">The notification bell</h3>
+    <figure class="fig">
+      <div class="stage" data-fig="bell"></div>
+      <figcaption><b>Fig. 15</b> — The bell lists only compliances that need something from you, plus
+        the outcome of requests you raised. Clicking a line opens that compliance.</figcaption>
+    </figure>
+    <ul class="tight">
+      <li>The red count is the number of <b>unread items that require action</b> — not a total of all records.</li>
+      <li>Opening a compliance marks its notification read, however you got there.</li>
+      <li>The bell can only report what your dashboards have loaded, so it settles a moment after the page opens.</li>
+    </ul>
+
+    <h3 class="sub">The Time Period filter</h3>
+    <p>
+      The bar under the cards, marked <i class="fas fa-filter" style="color:#3482AE"></i>
+      <b>TIME PERIOD</b>, narrows everything on the dashboard — the table you are looking at
+      <i>and</i> every card count — to a year, a month, or both. Records are matched on their
+      <b>due date</b>, and the filter applies on every tab: Pending, Approved, Rejected and Overdue
+      alike. Choosing a month on its own spans every year (useful for "every March filing"). The
+      <i class="fas fa-times" style="color:#5d7183"></i> button clears it, and the filter resets when
+      you move to a different role's dashboard.
+    </p>
+
+    <h3 class="sub">Search, columns and export</h3>
+    <ul class="tight">
+      <li><i class="fas fa-search"></i> <b>Search</b> — free text across the whole table.</li>
+      <li><i class="fas fa-filter"></i> <b>Column filters</b> — narrow one column at a time.</li>
+      <li><i class="fas fa-table-columns"></i> <b>Columns</b> — hide columns you do not need; useful before printing.</li>
+      <li><b>EXCEL / PDF / PRINT</b> — export exactly what the table currently shows, filters included.</li>
+    </ul>
+
+    <h3 class="sub">The Compliance Calendar</h3>
+    <figure class="fig">
+      <div class="stage" data-fig="calendar"></div>
+      <figcaption><b>Fig. 16</b> — The calendar on the Comp Admin Overdue tab: compliances laid out on
+        their due dates. Click any entry to open that compliance.</figcaption>
+    </figure>
+    <p>
+      The calendar is a month view of the records the Overdue tab is showing, laid out on their due
+      dates, so a cluster of deadlines is obvious at a glance. Each entry is a coloured dot and its
+      compliance category; a day with more than a few shows <i>+n MORE</i>.
+    </p>
+
+    <ol class="steps">
+      <li><b>It opens by itself.</b> Signing in as <b>Comp Admin</b> lands you on
+        <b>Overdue Compliance</b> with the calendar already open, rather than the list. The same
+        happens to anyone who <i>also</i> holds Comp Admin alongside another role — Comp Admin decides
+        where they land — and each time you come back to the Comp Admin dashboard from elsewhere.</li>
+      <li><b>Click a compliance in the calendar</b> to open it. The <b>Compliance View</b> replaces the
+        calendar in place, exactly as it does when you open a record from a list.</li>
+      <li><b>BACK TO CALENDAR</b> returns you to the month view you came from — the button in the card
+        header knows you arrived from the calendar and says so, instead of <b>BACK TO LIST</b>.</li>
+      <li><b>The COMPLIANCE CALENDAR button</b> at the top right switches between the calendar and the
+        table whenever you want; moving to another tab shows that tab's list as normal.</li>
+    </ol>
+
+    <div class="note">
+      <b>The calendar shows the same records as the tab under it.</b>
+      The Time Period filter reaches it too, so narrowing to a year or month narrows the calendar with
+      everything else.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 13. STATUS REFERENCE ══════════════════════ -->
+  <section id="s14">
+    <h2><span class="num">14</span> Status reference</h2>
+    <p class="lead">
+      The badge in the Status column answers "where is this compliance?". When a record is waiting on
+      <i>you</i>, the badge is written from your point of view.
+    </p>
+
+    <table class="doc">
+      <thead><tr><th style="width:24%">Badge</th><th>Meaning</th><th style="width:26%">Who acts next</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill p-pri">Compliance Assigned</span></td>
+            <td>The request has just been raised by the Comp Admin.</td>
+            <td>The doer — CHD or Plant HR</td></tr>
+        <tr><td><span class="pill p-warn">Submission Pending</span></td>
+            <td>Waiting for the doer to record the compliance and attach proof.</td>
+            <td>CHD (Flow 1) or Plant HR (Flow 2)</td></tr>
+        <tr><td><span class="pill p-info">Submitted</span></td>
+            <td>The doer has submitted; it is with the first approver.</td><td>Comp Head (Flow 1) or Group HR Head (Flow 2)</td></tr>
+        <tr><td><span class="pill p-info">Re-Submitted</span></td>
+            <td>Was rejected, has been corrected, and is with the approver again.</td><td>Comp Head (Flow 1) or Group HR Head (Flow 2)</td></tr>
+        <tr><td><span class="pill p-warn">Approval Pending</span></td>
+            <td>Sitting with the first approver.</td><td>Comp Head (Flow 1) or Group HR Head (Flow 2)</td></tr>
+        <tr><td><span class="pill p-warn">Final Approval Pending</span></td>
+            <td>First approval given; awaiting the last signature.</td><td>HCM Head</td></tr>
+        <tr><td><span class="pill p-ok">Approved</span></td>
+            <td>Approved by HCM Head. The compliance is closed.</td><td>Nobody — it is finished</td></tr>
+        <tr><td><span class="pill p-no">Rejected</span></td>
+            <td>Sent back with a reason. It returns to the submitter's Pending tab.</td><td>The original submitter</td></tr>
+        <tr><td><span class="pill p-warn">Pending</span></td>
+            <td>Generic "waiting on you" — shown on a record that is in your queue.</td><td>You</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      <b>Overdue is a date, not a decision.</b> A compliance is overdue when its due date has passed and
+      it is not yet approved. It keeps whatever status it had and can still be submitted and approved
+      normally — it simply also appears on the Overdue tab.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 14. TROUBLESHOOTING ══════════════════════ -->
+  <section id="s15">
+    <h2><span class="num">15</span> If something goes wrong</h2>
+
+    <table class="doc">
+      <thead><tr><th style="width:34%">What you see</th><th>What it means and what to do</th></tr></thead>
+      <tbody>
+        <tr><td><b>"Access Denied" after opening the portal</b></td>
+            <td>Your employee code has no compliance role mapped. The Comp Admin adds it in
+                <b>Admin Settings → Login Access</b>.</td></tr>
+        <tr><td><b>The compliance I need is not in any tab</b></td>
+            <td>Check the <b>Time Period</b> filter first — a year or month may still be selected from
+                earlier. Clear it with the <i class="fas fa-times"></i> button. Then check the Overdue
+                tab.</td></tr>
+        <tr><td><b>I opened a record but there is no action form</b></td>
+            <td>The compliance is not waiting on you: it is with someone else, or it is closed. The
+                Action History shows who has it.</td></tr>
+        <tr><td><b>The form will not submit</b></td>
+            <td>A required field is empty — the reason is printed in red under the field itself. On the
+                approval form, both a choice (Approve/Reject) <i>and</i> a comment are required.</td></tr>
+        <tr><td><b>"Compliance could not be assigned" for some plants</b></td>
+            <td>Those plants have no Plant HR mapped, so there is nobody to send the request to. The
+                plants that did work were still created; get the mapping fixed and assign the rest.</td></tr>
+        <tr><td><b>A card shows "…" instead of a number</b></td>
+            <td>That tab's records are still loading. It resolves on its own within a moment.</td></tr>
+        <tr><td><b>I was signed out on my own</b></td>
+            <td>The session timed out after inactivity. Re-open Compliance Management from the RUCHA
+                portal; nothing already submitted is affected.</td></tr>
+        <tr><td><b>A downloaded attachment will not open</b></td>
+            <td>It opens in a new browser tab — check that your browser did not block the pop-up.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      <b>Still stuck?</b> Note the <b>Compliance Sr. No</b> from the list (for example
+      <code class="k">1003/08/26/936</code>) and quote it when you raise the issue — it identifies the
+      exact record for the support team.
+    </div>
+  </section>
+
+  <!--CONTENT-->
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════════
+   FIGURE ENGINE
+   Each figure is the portal's own screen rebuilt from the markup below, drawn
+   on a fixed 1180px canvas and then scaled to whatever width the page has.
+   Annotations are anchored to elements by selector and measured at run time,
+   so a callout can never drift away from the control it points at.
+   ══════════════════════════════════════════════════════════════════════════ */
+(function () {
+  var W = 1180;
+  var LOGO = '../../RUCHA-LOGO-WHITE.png', AVA = '../../yogesh.png';
+
+  /* ── mock building blocks ──────────────────────────────────────────────── */
+  function links(list) {
+    return list.map(function (l) {
+      return '<div class="ui-link' + (l[2] ? ' on' : '') + '"><i class="fas ' + l[0] + '"></i>' + l[1] + '</div>';
+    }).join('');
+  }
+
+  function shell(o) {
+    return '' +
+      '<div class="ui">' +
+        '<div class="ui-side">' +
+          '<div class="ui-brand"><img src="' + LOGO + '" alt=""><span>Compliance Management</span></div>' +
+          '<div class="ui-user"><img src="' + AVA + '" alt=""><div class="js-who"><div class="n">' + o.name + '</div>' +
+            '<div class="r">[' + o.role + ']</div></div></div>' +
+          '<div class="ui-link"><i class="fas fa-home"></i>Home</div>' +
+          '<div class="js-menu">' + links(o.links) + '</div>' +
+          '<div class="ui-link"><i class="fas fa-sign-out-alt"></i>Logout</div>' +
+        '</div>' +
+        '<div class="ui-main">' +
+          '<div class="ui-nav">' +
+            '<span class="js-burger"><i class="fa fa-bars"></i></span>' +
+            '<div class="rt">' +
+              '<span class="ui-bell js-bell"><i class="fas fa-bell"></i>' +
+                (o.bell ? '<span class="bdg">' + o.bell + '</span>' : '') + '</span>' +
+              '<span class="js-help"><i class="fas fa-comments"></i> Help</span>' +
+              '<span class="js-logout"><i class="fas fa-sign-out-alt"></i> Logout</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="ui-body">' +
+            '<div class="ui-title js-title">' + o.title + '</div>' +
+            (o.cards || '') + (o.filter === false ? '' : filterBar()) + (o.body || '') +
+          '</div>' +
+        '</div>' +
+      '</div>' + (o.extra || '');
+  }
+
+  function cards(list) {
+    return '<div class="ui-cards js-cards" style="--c:' + list.length + '">' + list.map(function (c, i) {
+      var face = c.icon ? '<i class="' + c.icon + '"></i>' : '<span class="v">' + c.v + '</span>';
+      return '<div class="ui-card ' + c.cls + ' js-card' + (i + 1) + '">' + face + '<h5>' + c.label + '</h5></div>';
+    }).join('') + '</div>';
+  }
+
+  function filterBar() {
+    return '' +
+      '<div class="ui-filter js-filter">' +
+        '<span class="lb"><i class="fas fa-filter" style="color:#3482AE"></i> &nbsp;Time Period</span>' +
+        '<span style="display:flex;gap:7px">' +
+          '<span class="sel">ALL YEARS <i class="fas fa-chevron-down" style="font-size:8px;color:#6b7280"></i></span>' +
+          '<span class="sel">ALL MONTHS <i class="fas fa-chevron-down" style="font-size:8px;color:#6b7280"></i></span>' +
+        '</span>' +
+      '</div>';
+  }
+
+  function tools() {
+    return '<div class="ui-tools js-tools">' +
+      '<span class="ui-btn green"><i class="fas fa-file-excel"></i> Excel</span>' +
+      '<span class="ui-btn red"><i class="fas fa-file-pdf"></i> PDF</span>' +
+      '<span class="ui-btn gray"><i class="fas fa-print"></i> Print</span>' +
+      '<span style="flex:1"></span>' +
+      '<span class="ui-btn gray js-search"><i class="fas fa-search"></i></span>' +
+      '<span class="ui-btn gray"><i class="fas fa-filter"></i></span>' +
+      '<span class="ui-btn gray"><i class="fas fa-table-columns"></i></span>' +
+      '</div>';
+  }
+
+  function listCard(o) {
+    var head = '<div class="ui-h ' + o.cls + '"><span><i class="fas fa-tasks"></i>' + o.title + '</span>' +
+      (o.right || '') + '</div>';
+    var body = o.raw ? o.raw :
+      '<div class="ui-cardbody">' + (o.noTools ? '' : tools()) +
+        '<table class="ui-t' + (o.cols && o.cols.length > 8 ? ' wide' : '') + '"><thead><tr>' +
+          o.cols.map(function (c) { return '<th>' + c + '</th>'; }).join('') +
+        '</tr></thead><tbody>' +
+          o.rows.map(function (r, i) {
+            return '<tr class="js-row' + (i + 1) + '">' + r.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>';
+          }).join('') +
+        '</tbody></table>' +
+      '</div>';
+    return '<div class="ui-cardbox js-list">' + head + body + '</div>';
+  }
+
+  /* row cells */
+  function sr(n) { return '<span class="srno js-sr"><i class="fas fa-eye"></i>' + n + '</span>'; }
+  function bd(t, c) { return '<span class="bdg2 ' + c + '">' + t + '</span>'; }
+  var TRASH = '<span class="ui-btn red js-del" style="padding:3px 6px"><i class="fas fa-trash"></i></span>';
+
+  /* base list columns, in the portal's order */
+  var COLS = ['Compliance Sr. No', 'Plant Code', 'Compliance Act', 'Compliance Act Sub Type',
+              'Applicable Year', 'Frequency', 'Due Date', 'Status'];
+  function row(sn, pc, act, sub, yr, fr, due, badge) {
+    return [sr(sn), pc, act, sub, yr, fr, due, badge];
+  }
+
+  /* ── compliance detail (the screen every role opens a record into) ──────── */
+  function detail(o) {
+    var f = function (lbl, val, ro, span) {
+      return '<div class="ui-f" style="grid-column:span ' + (span || 3) + '"><label>' + lbl + '</label>' +
+        '<div class="ui-in' + (ro === false ? '' : ' ro') + '">' + val + '</div></div>';
+    };
+    var details =
+      '<div class="ui-cardbox" style="margin-bottom:11px"><div class="ui-h h-primary"><span><i class="fas fa-tasks"></i>1.Compliance Act Details</span></div>' +
+        '<div class="ui-cardbody"><div class="ui-grid js-det" style="grid-template-columns:repeat(12,1fr)">' +
+          f('Compliance Sr. No:', o.sn, true, 2) + f('Plant Code:', o.pc, true, 2) +
+          f('Compliance Category:', o.act, true, 4) + f('Compliance Subcategory:', o.sub, true, 4) +
+          f('Frequency:', o.freq, true, 4) + f('Due Date:', o.due, true, 4) +
+          '<div class="ui-f" style="grid-column:span 4"><label>Attachment :</label>' +
+            '<div class="ui-in ro js-att"><span><i class="fas fa-download" style="color:#374151"></i> &nbsp;' + o.file + '</span></div></div>' +
+        '</div></div></div>';
+
+    var hist =
+      '<div class="ui-cardbox" style="margin-bottom:11px"><div class="ui-h h-primary"><span><i class="fas fa-tasks"></i>2.Action History</span></div>' +
+        '<div class="ui-cardbody js-hist"><table class="ui-t"><thead><tr>' +
+          ['No', 'Name of Authority', 'Date &amp; Time', 'Attachment', 'Remark', 'Action']
+            .map(function (c) { return '<th>' + c + '</th>'; }).join('') +
+        '</tr></thead><tbody>' + o.history.map(function (h, i) {
+          return '<tr><td>' + (i + 1) + '</td><td>' + h[0] + '</td><td>' + h[1] + '</td><td>' + h[2] +
+                 '</td><td style="white-space:normal;max-width:260px">' + h[3] + '</td><td>' + h[4] + '</td></tr>';
+        }).join('') + '</tbody></table></div></div>';
+
+    return details + hist + (o.action || '');
+  }
+
+  /* 3.ACTION — doer version */
+  function actionSubmit() {
+    return '<div class="ui-cardbox js-act"><div class="ui-h h-primary"><span><i class="fas fa-tasks"></i>3.Action</span></div>' +
+      '<div class="ui-cardbody"><div class="ui-grid" style="grid-template-columns:repeat(3,1fr)">' +
+        '<div class="ui-f js-date"><label>Date of Compliance</label><div class="ui-in">2026-08-18 <i class="far fa-calendar-alt" style="color:#6b7280"></i></div></div>' +
+        '<div class="ui-f js-up"><label>Upload Attachment</label><div class="ui-in"><span style="color:#374151">' +
+          '<span style="border:1px solid #b9c2ca;background:#eef1f4;padding:1px 6px;border-radius:2px">Choose File</span> &nbsp;PF_CHALLAN_AUG26.pdf</span></div></div>' +
+        '<div class="ui-f js-cmt"><label>Comment</label><div class="ui-ta">PF paid and challan attached for August 2026.</div></div>' +
+      '</div>' +
+      '<div class="ui-foot js-foot" style="margin:10px -14px -12px"><span class="ui-btn">Submit</span><span class="ui-btn red">Cancel</span></div>' +
+      '</div></div>';
+  }
+
+  /* 3.ACTION — approver version */
+  function actionApprove() {
+    return '<div class="ui-cardbox js-act"><div class="ui-h h-primary"><span><i class="fas fa-tasks"></i>3.Action</span></div>' +
+      '<div class="ui-cardbody">' +
+        '<div class="js-radio" style="display:flex;align-items:center;gap:16px;font-size:10.5px;margin-bottom:10px">' +
+          '<span style="color:#3482AE;font-weight:700;text-transform:uppercase">Action :</span>' +
+          '<span style="color:#16a34a;font-weight:700;text-transform:uppercase"><input type="radio" checked disabled> Approve</span>' +
+          '<span style="color:#dc2626;font-weight:700;text-transform:uppercase"><input type="radio" disabled> Reject</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:14px;align-items:flex-start">' +
+          '<span style="color:#3482AE;font-weight:700;font-size:10px;text-transform:uppercase;padding-top:6px;white-space:nowrap">Comment <span style="color:#df4759">*</span> :</span>' +
+          '<div style="flex:1"><div class="ui-ta js-cmt" style="height:74px">Challan verified against the PF portal. Approved.</div></div>' +
+        '</div>' +
+        '<div class="ui-foot js-foot" style="margin:11px -14px -12px"><span class="ui-btn">Submit</span><span class="ui-btn red">Cancel</span></div>' +
+      '</div></div>';
+  }
+
+  var BACK = '<span style="font-size:11px;font-weight:700"><i class="fas fa-chevron-left"></i> Back to List</span>';
+
+  /* sample data shared by the figures */
+  var HIST = [
+    ['SWAPNIL DAFANE', '2026-08-18 03:49 PM', '-', 'Compliance assigned to plant 1003.', bd('Compliance Assigned', 'b-pri')],
+    ['RAHUL PATIL', '2026-08-18 03:49 PM', '-', '-', bd('Submission Pending', 'b-warn')]
+  ];
+  var HIST2 = [
+    ['SWAPNIL DAFANE', '2026-08-18 03:49 PM', '-', 'Compliance assigned to plant 1003.', bd('Compliance Assigned', 'b-pri')],
+    ['RAHUL PATIL', '2026-08-20 11:02 AM', '<span style="color:#3482AE">PF_CHALLAN_AUG26.pdf <i class="fas fa-download"></i></span>',
+     'PF paid and challan attached for August 2026.', bd('Submitted', 'b-info')],
+    ['ANJALI SHINDE', '2026-08-20 11:02 AM', '-', '-', bd('Approval Pending', 'b-warn')]
+  ];
+
+  /* ── the figures ───────────────────────────────────────────────────────── */
+  var EYE = '<i class="fas fa-eye" style="color:#3482AE"></i> &nbsp;'
+          + '<i class="fas fa-download" style="color:#42ba96"></i>';
+
+  var FIGS = {};
+
+  FIGS['anatomy'] = { h: 462, html: shell({
+    name: 'RAHUL PATIL', role: 'PLANT HR', bell: 3, title: 'PLANT HR DASHBOARD',
+    links: [['fa-tachometer-alt', 'Plant Hr Dashboard', true]],
+    cards: cards([
+      { v: '12', label: 'Pending Compliance', cls: 'c-pending' },
+      { v: '48', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '3', label: 'Overdue Compliance', cls: 'c-draft' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Pending Compliance List', cols: COLS, rows: [
+        row('1003/08/26/936', '1003', 'LABOR LAWS', 'PF MONTHLY RETURN', '2026', 'MONTHLY', '2026-09-15', bd('Submission Pending', 'b-warn')),
+        row('1003/08/26/931', '1003', 'FACTORY ACT', 'FACTORY LICENSE RENEWAL', '2026', 'YEARLY', '2026-09-30', bd('Submission Pending', 'b-warn')),
+        row('1003/07/26/902', '1003', 'OTHER TAXES', 'GRAMPANCHAYAT TAX', '2026', 'QUARTERLY', '2026-10-01', bd('Rejected', 'b-no'))
+      ]
+    })
+  }), notes: [
+    { sel: '.js-burger', n: 1, dp: 'b' }, { sel: '.js-bell', n: 2, dp: 'b' },
+    { sel: '.js-help', n: 3, dp: 'b' }, { sel: '.js-logout', n: 4, dp: 'b' },
+    { sel: '.js-who', n: 5, dp: 'r' }, { sel: '.js-menu', n: 6, dp: 'r' },
+    { sel: '.js-cards', n: 7, dp: 'l' }, { sel: '.js-filter', n: 8, dp: 'l' },
+    { sel: '.js-list', n: 9, dp: 'l' }
+  ] };
+
+  FIGS['admin-dash'] = { h: 476, html: shell({
+    name: 'SWAPNIL DAFANE', role: 'COMP ADMIN', bell: 5, title: 'COMPLIANCE ADMIN DASHBOARD',
+    links: [['fa-tachometer-alt', 'COMP ADMIN DASHBOARD', true], ['fa-wrench', 'Admin Settings']],
+    cards: cards([
+      { icon: 'fas fa-plus', label: 'Assign Compliance / Notice', cls: 'c-info' },
+      { v: '27', label: 'Pending Compliance', cls: 'c-pending' },
+      { v: '113', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '6', label: 'Overdue Compliance', cls: 'c-draft' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Pending Compliance List',
+      cols: ['Compliance Sr. No', 'Plant Code', 'Compliance Act', 'Compliance Act Sub Type', 'Applicable Year', 'Frequency', 'Due Date', 'Department', 'Pending At', 'Status'],
+      rows: [
+        [sr('1003/08/26/936'), '1003', 'LABOR LAWS', 'PF MONTHLY RETURN', '2026', 'MONTHLY', '2026-09-15', 'HR', 'RAHUL PATIL', bd('Submission Pending', 'b-warn')],
+        [sr('2001/08/26/935'), '2001', 'FACTORY ACT', 'FACTORY LICENSE RENEWAL', '2026', 'YEARLY', '2026-09-30', 'HR', 'ANJALI SHINDE', bd('Approval Pending', 'b-warn')]
+      ]
+    })
+  }), notes: [
+    { sel: '.js-card1', at: 'side', y: 242, w: 208, text: 'Click <b>ASSIGN COMPLIANCE</b> to raise a new compliance request.' },
+    { sel: '.js-card3', at: 'band', bx: 0.68, w: 320, text: 'The number on each card is how many records that tab holds right now.' }
+  ] };
+
+  FIGS['assign-form'] = { h: 530, html: shell({
+    name: 'SWAPNIL DAFANE', role: 'COMP ADMIN', bell: 5, title: 'COMPLIANCE ADMIN DASHBOARD', filter: false,
+    links: [['fa-tachometer-alt', 'COMP ADMIN DASHBOARD', true], ['fa-wrench', 'Admin Settings']],
+    cards: cards([
+      { icon: 'fas fa-plus', label: 'Assign Compliance / Notice', cls: 'c-info' },
+      { v: '27', label: 'Pending Compliance', cls: 'c-pending' },
+      { v: '113', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '6', label: 'Overdue Compliance', cls: 'c-draft' }
+    ]),
+    body: listCard({
+      cls: 'h-info', title: 'Assign Compliance / Notice', raw:
+        '<div class="ui-cardbody"><div class="ui-grid" style="grid-template-columns:repeat(3,1fr);gap:12px 18px">' +
+          '<div class="ui-f js-f1"><label>Select Plant <span class="req">*</span></label><div class="ui-in">RUCHA ENGINEERS - 1003 <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f2"><label>Compliance Category</label><div class="ui-in">LABOR LAWS <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f3"><label>Compliance Subcategory</label><div class="ui-in">PF MONTHLY RETURN <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f4"><label>Frequency</label><div class="ui-in">MONTHLY <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f5"><label>Due Date</label><div class="ui-in">2026-09-15 <i class="far fa-calendar-alt" style="color:#6b7280"></i></div></div>' +
+          '<div class="ui-f js-f6"><label>Attachment <span style="color:#FF0000;font-weight:400">(Compliance Act/Notification Document.)</span> <span class="req">*</span></label>' +
+            '<div class="ui-in"><span><span style="border:1px solid #b9c2ca;background:#eef1f4;padding:1px 6px;border-radius:2px">Choose File</span> &nbsp;PF_ACT_NOTIFICATION.pdf</span></div></div>' +
+        '</div></div>' +
+        '<div class="ui-foot js-f7"><span class="ui-btn">Submit</span><span class="ui-btn red">Cancel</span></div>'
+    })
+  }), notes: [
+    { sel: '.js-f1', at: 'side', y: 248, w: 208, text: '<span class="n">1</span>Pick one plant — or <b>ALL PLANTS</b> to raise it everywhere at once.' },
+    { sel: '.js-f3', at: 'band', bx: 0.42, w: 290, text: '<span class="n">3</span>The subcategory decides which approval flow the request travels.' },
+    { sel: '.js-f6', at: 'band', bx: 0.82, w: 280, text: '<span class="n">6</span>Attach the act or notification — the doer reads this. Mandatory.' }
+  ] };
+
+  FIGS['admin-pending'] = { h: 486, html: shell({
+    name: 'SWAPNIL DAFANE', role: 'COMP ADMIN', bell: 5, title: 'COMPLIANCE ADMIN DASHBOARD',
+    links: [['fa-tachometer-alt', 'COMP ADMIN DASHBOARD', true], ['fa-wrench', 'Admin Settings']],
+    cards: cards([
+      { icon: 'fas fa-plus', label: 'Assign Compliance / Notice', cls: 'c-info' },
+      { v: '28', label: 'Pending Compliance', cls: 'c-pending' },
+      { v: '113', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '6', label: 'Overdue Compliance', cls: 'c-draft' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Pending Compliance List',
+      cols: ['Compliance Sr. No', 'Plant Code', 'Compliance Act', 'Compliance Act Sub Type', 'Applicable Year', 'Frequency', 'Due Date', 'Department', 'Pending At', 'Status', 'Action'],
+      rows: [
+        [sr('1003/08/26/936'), '1003', 'LABOR LAWS', 'PF MONTHLY RETURN', '2026', 'MONTHLY', '2026-09-15', 'HR', 'RAHUL PATIL', bd('Submission Pending', 'b-warn'), TRASH],
+        [sr('2001/08/26/935'), '2001', 'FACTORY ACT', 'FACTORY LICENSE RENEWAL', '2026', 'YEARLY', '2026-09-30', 'HR', 'ANJALI SHINDE', bd('Approval Pending', 'b-warn'), TRASH],
+        [sr('9001/07/26/902'), '9001', 'OTHER TAXES', 'GRAMPANCHAYAT TAX', '2026', 'QUARTERLY', '2026-10-01', 'ACCOUNTS', 'VIJAY KULKARNI', bd('Final Approval Pending', 'b-warn'), TRASH]
+      ]
+    })
+  }), notes: [
+    { sel: '.js-row1 .js-sr', at: 'band', bx: 0.34, w: 250, text: 'Click the serial number to open the compliance.' },
+    { sel: '.js-row1 .js-del', at: 'band', bx: 0.76, w: 290, text: 'Delete removes a request raised in error — it cannot be undone.' }
+  ] };
+
+  FIGS['phr-dash'] = { h: 466, html: shell({
+    name: 'RAHUL PATIL', role: 'PLANT HR', bell: 3, title: 'PLANT HR DASHBOARD',
+    links: [['fa-tachometer-alt', 'Plant Hr Dashboard', true]],
+    cards: cards([
+      { v: '12', label: 'Pending Compliance', cls: 'c-pending' },
+      { v: '48', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '3', label: 'Overdue Compliance', cls: 'c-draft' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Pending Compliance List', cols: COLS, rows: [
+        row('1003/08/26/936', '1003', 'LABOR LAWS', 'PF MONTHLY RETURN', '2026', 'MONTHLY', '2026-09-15', bd('Submission Pending', 'b-warn')),
+        row('1003/08/26/931', '1003', 'FACTORY ACT', 'FACTORY LICENSE RENEWAL', '2026', 'YEARLY', '2026-09-30', bd('Submission Pending', 'b-warn'))
+      ]
+    })
+  }), notes: [
+    { sel: '.js-row1 .js-sr', at: 'band', bx: 0.34, w: 260, text: 'Open the compliance you have been asked to complete.' },
+    { sel: '.js-row1 td:last-child', at: 'band', bx: 0.78, w: 250, text: 'This badge means the compliance is waiting for <b>you</b>.' }
+  ] };
+
+  FIGS['phr-view'] = { h: 800, html: shell({
+    name: 'RAHUL PATIL', role: 'PLANT HR', bell: 3, title: 'PLANT HR DASHBOARD',
+    links: [['fa-tachometer-alt', 'Plant Hr Dashboard', true]],
+    cards: cards([
+      { v: '12', label: 'Pending Compliance', cls: 'c-pending' },
+      { v: '48', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '3', label: 'Overdue Compliance', cls: 'c-draft' }
+    ]),
+    filter: false,
+    body: listCard({
+      cls: 'h-pending', title: 'Compliance View', right: BACK, raw:
+        '<div class="ui-cardbody">' + detail({
+          sn: '1003/08/26/936', pc: '1003', act: 'LABOR LAWS', sub: 'PF MONTHLY RETURN',
+          freq: 'MONTHLY', due: '2026-09-15', file: 'PF_ACT_NOTIFICATION.pdf',
+          history: HIST, action: actionSubmit()
+        }) + '</div>'
+    })
+  }), notes: [
+    { sel: '.js-att', at: 'side', y: 210, w: 208, text: '<b>1.</b> Download the act document.' },
+    { sel: '.js-hist', at: 'side', y: 330, w: 208, text: '<b>2.</b> Every step so far — including a rejection reason.' },
+    { sel: '.js-up', at: 'band', bx: 0.42, w: 270, text: '<b>3.</b> Attach the proof of compliance.' },
+    { sel: '.js-cmt', at: 'band', bx: 0.80, w: 270, text: '<b>4.</b> Say what was done, then <b>SUBMIT</b>.' }
+  ] };
+
+  FIGS['head-dash'] = { h: 466, html: shell({
+    name: 'ANJALI SHINDE', role: 'COMP HEAD', bell: 2, title: 'COMPLIANCE HEAD DASHBOARD',
+    links: [['fa-tachometer-alt', 'Comp Head Dashboard', true]],
+    cards: cards([
+      { v: '7', label: 'Approval Pending', cls: 'c-pending' },
+      { v: '96', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '4', label: 'Rejected Compliance', cls: 'c-red' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Approval Pending List', cols: COLS, rows: [
+        row('1003/08/26/936', '1003', 'LABOR LAWS', 'PF MONTHLY RETURN', '2026', 'MONTHLY', '2026-09-15', bd('Submitted', 'b-info')),
+        row('2001/08/26/930', '2001', 'FACTORY ACT', 'FIRE SAFETY AUDIT', '2026', 'HALF-YEARLY', '2026-09-20', bd('Re-Submitted', 'b-info'))
+      ]
+    })
+  }), notes: [
+    { sel: '.js-card1', at: 'side', y: 214, w: 208, text: 'Your work list — everything waiting for your approval.' },
+    { sel: '.js-row2 td:last-child', at: 'band', bx: 0.76, w: 300, text: '<b>Re-Submitted</b> = you rejected it earlier and it has been corrected.' }
+  ] };
+
+  FIGS['head-action'] = { h: 690, html: shell({
+    name: 'ANJALI SHINDE', role: 'COMP HEAD', bell: 2, title: 'COMPLIANCE HEAD DASHBOARD', filter: false,
+    links: [['fa-tachometer-alt', 'Comp Head Dashboard', true]],
+    cards: cards([
+      { v: '7', label: 'Approval Pending', cls: 'c-pending' },
+      { v: '96', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '4', label: 'Rejected Compliance', cls: 'c-red' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Compliance View', right: BACK, raw:
+        '<div class="ui-cardbody">' +
+          '<div class="ui-cardbox" style="margin-bottom:11px"><div class="ui-h h-primary"><span><i class="fas fa-tasks"></i>2.Action History</span></div>' +
+            '<div class="ui-cardbody js-hist"><table class="ui-t"><thead><tr>' +
+              ['No', 'Name of Authority', 'Date &amp; Time', 'Attachment', 'Remark', 'Action'].map(function (c) { return '<th>' + c + '</th>'; }).join('') +
+            '</tr></thead><tbody>' + HIST2.map(function (h, i) {
+              return '<tr class="js-h' + (i + 1) + '"><td>' + (i + 1) + '</td><td>' + h[0] + '</td><td>' + h[1] + '</td><td>' + h[2] +
+                     '</td><td style="white-space:normal;max-width:280px">' + h[3] + '</td><td>' + h[4] + '</td></tr>';
+            }).join('') + '</tbody></table></div></div>' +
+          actionApprove() +
+        '</div>'
+    })
+  }), notes: [
+    { sel: '.js-h2 td:nth-child(4)', at: 'side', y: 214, w: 208, text: 'Download what the submitter attached before deciding.' },
+    { sel: '.js-radio', at: 'band', bx: 0.40, w: 280, text: 'Choose <b>APPROVE</b> or <b>REJECT</b> — one is required.' },
+    { sel: '.js-cmt', at: 'band', bx: 0.80, w: 300, text: 'A comment is required either way. On a rejection it is the instruction the doer gets.' }
+  ] };
+
+  FIGS['corp-dash'] = { h: 506, html: shell({
+    name: 'VIJAY KULKARNI', role: 'CORP HR', bell: 4, title: 'CORP HR COMPLIANCE DASHBOARD',
+    links: [['fa-tachometer-alt', 'Corp HR Dashboard', true]],
+    cards: cards([
+      { v: '9', label: 'Approval Pending', cls: 'c-pending' },
+      { v: '132', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '5', label: 'Rejected Compliance', cls: 'c-red' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Approval Pending List', cols: COLS, rows: [
+        row('1003/08/26/936', '1003', 'LABOR LAWS', 'PF MONTHLY RETURN', '2026', 'MONTHLY', '2026-09-15', bd('Submitted', 'b-info')),
+        row('2001/08/26/928', '2001', 'LABOR LAWS', 'MINIMUM WAGES DISPLAY', '2026', 'YEARLY', '2026-09-25', bd('Submitted', 'b-info')),
+        row('9001/08/26/927', '9001', 'FACTORY ACT', 'FACTORY LICENSE RENEWAL', '2026', 'YEARLY', '2026-10-05', bd('Submitted', 'b-info'))
+      ]
+    })
+  }), notes: [
+    { sel: '.js-row2 .js-sr', at: 'band', bx: 0.45, w: 330, text: 'Submissions from every plant mapped to you land here.' }
+  ] };
+
+  FIGS['hcm-dash'] = { h: 466, html: shell({
+    name: 'SUNIL DESHMUKH', role: 'HCM HEAD', bell: 6, title: 'HCM HEAD COMPLIANCE DASHBOARD',
+    links: [['fa-tachometer-alt', 'HCM Head Dashboard', true]],
+    cards: cards([
+      { v: '11', label: 'Approval Pending', cls: 'c-pending' },
+      { v: '204', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '7', label: 'Rejected Compliance', cls: 'c-red' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Approval Pending List', cols: COLS, rows: [
+        row('1003/08/26/936', '1003', 'LABOR LAWS', 'PF MONTHLY RETURN', '2026', 'MONTHLY', '2026-09-15', bd('Final Approval Pending', 'b-warn')),
+        row('2001/08/26/930', '2001', 'FACTORY ACT', 'FIRE SAFETY AUDIT', '2026', 'HALF-YEARLY', '2026-09-20', bd('Final Approval Pending', 'b-warn'))
+      ]
+    })
+  }), notes: [
+    { sel: '.js-row1 td:last-child', at: 'band', bx: 0.74, w: 280, text: 'Approving here closes the compliance for everyone.' }
+  ] };
+
+  FIGS['auth-dash'] = { h: 466, html: shell({
+    name: 'MEENA JOSHI', role: 'AUTHORITY', title: 'AUTHORITY DASHBOARD',
+    links: [['fa-tachometer-alt', 'Authority Dashboard', true]],
+    cards: cards([
+      { v: '31', label: 'Pending Compliance', cls: 'c-pending' },
+      { v: '204', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '7', label: 'Rejected Compliance', cls: 'c-red' },
+      { v: '6', label: 'Overdue Compliance', cls: 'c-draft' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Pending Compliance List',
+      cols: ['Compliance Sr. No', 'Plant Code', 'Compliance Act', 'Compliance Act Sub Type', 'Applicable Year', 'Frequency', 'Due Date', 'Action Pending', 'Status'],
+      rows: [
+        [sr('1003/08/26/936'), '1003', 'LABOR LAWS', 'PF MONTHLY RETURN', '2026', 'MONTHLY', '2026-09-15', 'RAHUL PATIL', bd('Submission Pending', 'b-warn')],
+        [sr('2001/08/26/935'), '2001', 'FACTORY ACT', 'FACTORY LICENSE RENEWAL', '2026', 'YEARLY', '2026-09-30', 'ANJALI SHINDE', bd('Approval Pending', 'b-warn')]
+      ]
+    })
+  }), notes: [
+    { sel: '.js-row1 td:nth-child(8)', at: 'band', bx: 0.66, w: 280, text: 'Who the compliance is sitting with right now.' }
+  ] };
+
+  FIGS['notice-form'] = { h: 500, html: shell({
+    name: 'SAGAR SHEWALKAR', role: 'COMP ADMIN', bell: 3, title: 'COMPLIANCE ADMIN DASHBOARD', filter: false,
+    links: [['fa-tachometer-alt', 'COMP ADMIN DASHBOARD', true], ['fa-wrench', 'Admin Settings']],
+    cards: cards([
+      { icon: 'fas fa-plus', label: 'Assign Compliance / Notice', cls: 'c-info' },
+      { v: '27', label: 'Pending Compliance', cls: 'c-pending' },
+      { v: '113', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '6', label: 'Overdue Compliance', cls: 'c-draft' },
+      { v: '4', label: 'Notice', cls: 'c-notice' }
+    ]),
+    body: listCard({
+      cls: 'h-info', title: 'Add Notice', raw:
+        '<div class="ui-cardbody"><div class="ui-grid" style="grid-template-columns:repeat(3,1fr);gap:12px 18px">' +
+          '<div class="ui-f js-f1"><label>Request Type <span class="req">*</span></label><div class="ui-in" style="border-color:#3482AE">NOTICE <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f2"><label>Select Plant <span class="req">*</span></label><div class="ui-in">ALL PLANTS <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f3"><label>Compliance Category</label><div class="ui-in">POLLUTION CONTROL BOARD <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f4"><label>Compliance Subcategory</label><div class="ui-in">PCB CONSENT TO OPERATE <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f5"><label>Attachment <span style="color:#FF0000;font-weight:400">(Compliance Act/Notification Document.)</span> <span class="req">*</span></label>' +
+            '<div class="ui-in"><span><span style="border:1px solid #b9c2ca;background:#eef1f4;padding:1px 6px;border-radius:2px">Choose File</span> &nbsp;PCB_CONSENT_2026.pdf</span></div></div>' +
+          '<div class="ui-f js-f6"><label>Notice Description <span style="color:#9aa6b1;font-weight:400">(optional)</span></label>' +
+            '<div class="ui-in" style="height:52px;align-items:flex-start;padding-top:5px">Renewal filed, copy attached for your records.</div></div>' +
+        '</div></div>' +
+        '<div class="ui-foot js-f7"><span class="ui-btn">Submit</span><span class="ui-btn red">Cancel</span></div>'
+    })
+  }), notes: [
+    { sel: '.js-f1', at: 'side', y: 252, w: 216, text: '<span class="n">1</span>Set <b>Request Type</b> to <b>Notice</b>. The form below changes to suit \u2014 it opens on <b>Compliance</b>.' },
+    { sel: '.js-f4', at: 'band', bx: 0.40, w: 300, text: '<span class="n">3</span>The subcategory becomes the notice\u2019s <b>Subject</b>. No approval flow is looked up \u2014 a notice has none.' },
+    { sel: '.js-f6', at: 'band', bx: 0.82, w: 286, text: '<span class="n">5</span>No <b>Frequency</b> and no <b>Due Date</b>: a notice happens once.' }
+  ] };
+
+  FIGS['notice-dash'] = { h: 470, html: shell({
+    name: 'VIJAY SHELKE', role: 'PLANT HR', bell: 2, title: 'NOTICE DASHBOARD',
+    links: [['fa-tachometer-alt', 'PLANT HR DASHBOARD'], ['fa-bullhorn', 'NOTICE DASHBOARD', true]],
+    cards: cards([
+      { v: '9',  label: 'Pending Compliance',  cls: 'c-pending' },
+      { v: '41', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '3',  label: 'Overdue Compliance',  cls: 'c-draft' },
+      { v: '6',  label: 'Notice',              cls: 'c-notice' }
+    ]),
+    body: listCard({
+      cls: 'h-notice', title: 'Notice Details',
+      cols: ['Sr.No', 'Notice No', 'Subject', 'Description', 'Plant', 'Notice Category', 'Published By', 'Published On', 'Attachment'],
+      rows: [
+        ['1', sr('NTC/08/26/012'), 'PCB CONSENT TO OPERATE', 'Renewal filed', 'ALL PLANTS', 'POLLUTION CONTROL BOARD', 'SAGAR SHEWALKAR', '2026-08-22', EYE],
+        ['2', sr('NTC/08/26/011'), 'RETURN UNDER FACTORY ACT', 'For information', 'RUCHA ENGINEERS \u2014 1001', 'FACTORIES ACT', 'SAGAR SHEWALKAR', '2026-08-21', EYE]
+      ]
+    })
+  }), notes: [
+    { sel: '.js-card4', at: 'side', y: 236, w: 214, text: 'The <b>NOTICE</b> card opens this board. Its number is how many notices you can see.' },
+    { sel: '.js-filter', at: 'band', bx: 0.62, w: 330, text: 'Notices are filtered by the date they were <b>published</b>, not by a due date \u2014 a notice has none.' }
+  ] };
+
+  FIGS['bell'] = { h: 490, html: shell({
+    name: 'RAHUL PATIL', role: 'PLANT HR', bell: 3, title: 'PLANT HR DASHBOARD',
+    links: [['fa-tachometer-alt', 'Plant Hr Dashboard', true]],
+    cards: cards([
+      { v: '12', label: 'Pending Compliance', cls: 'c-pending' },
+      { v: '48', label: 'Approved Compliance', cls: 'c-green' },
+      { v: '3', label: 'Overdue Compliance', cls: 'c-draft' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Pending Compliance List', cols: COLS, rows: [
+        row('1003/08/26/936', '1003', 'LABOR LAWS', 'PF MONTHLY RETURN', '2026', 'MONTHLY', '2026-09-15', bd('Submission Pending', 'b-warn')),
+        row('1003/08/26/931', '1003', 'FACTORY ACT', 'FACTORY LICENSE RENEWAL', '2026', 'YEARLY', '2026-09-30', bd('Submission Pending', 'b-warn'))
+      ]
+    }),
+    extra: '<div class="js-bellbox" style="position:absolute;right:88px;top:44px;width:310px;background:#fff;border:1px solid #dbe3ea;border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.22);z-index:4;overflow:hidden">' +
+      '<div style="background:#f4f7f9;padding:7px 11px;font-size:10.5px;font-weight:700;color:#3482AE;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between">Notifications <span style="color:#6b7280;font-weight:400">3 new</span></div>' +
+      [['fas fa-clipboard-list', '#3482AE', 'Assigned to you — submission pending', '1003/08/26/936'],
+       ['fas fa-hourglass-half', '#FFB64D', 'Overdue — action required', '1003/07/26/902'],
+       ['fas fa-times-circle', '#e74c3c', 'Rejected', '1003/06/26/880']]
+        .map(function (n) {
+          return '<div style="display:flex;gap:9px;padding:8px 11px;border-top:1px solid #eef2f5;align-items:flex-start">' +
+            '<i class="' + n[0] + '" style="color:' + n[1] + ';font-size:12px;margin-top:2px"></i>' +
+            '<span><span style="display:block;font-size:11px;color:#243746">' + n[2] + '</span>' +
+            '<span style="display:block;font-size:10px;color:#3482AE;font-weight:700">' + n[3] + '</span></span></div>';
+        }).join('') + '</div>'
+  }), notes: [
+    { sel: '.js-bell', at: 'side', y: 214, w: 208, text: 'The count is what needs <b>your</b> action.' },
+    { sel: '.js-bellbox', at: 'band', bx: 0.74, w: 300, text: 'Click a line to open that compliance straight away.' }
+  ] };
+
+  FIGS['calendar'] = { h: 700, html: (function () {
+    var acts = { 'LABOR LAWS': '#3482AE', 'FACTORY ACT': '#42ba96', 'OTHER TAXES': '#fd9644' };
+    var ev = { 3: ['LABOR LAWS'], 9: ['FACTORY ACT'], 15: ['LABOR LAWS', 'OTHER TAXES'], 20: ['FACTORY ACT'], 25: ['OTHER TAXES'], 30: ['LABOR LAWS', 'FACTORY ACT', 'OTHER TAXES'] };
+    var wd = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    var head = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px">' + wd.map(function (d, i) {
+      return '<div style="text-align:center;font-size:10px;font-weight:700;color:#fff;padding:4px 0;letter-spacing:.05em;background:' + (i === 0 ? '#c2478a' : '#7ec8d4') + '">' + d + '</div>';
+    }).join('') + '</div>';
+    var cells = '';
+    for (var i = 0; i < 35; i++) {
+      var d = i - 1;
+      if (d < 1 || d > 30) { cells += '<div style="background:#f9fafb;min-height:62px"></div>'; continue; }
+      var list = ev[d] || [];
+      cells += '<div class="' + (d === 15 ? 'js-ev' : '') + '" style="background:#fff;min-height:62px;padding:4px 5px">' +
+        '<span style="display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:50%;font-size:10.5px;font-weight:700;' +
+          (d === 18 ? 'background:#3482AE;color:#fff' : (i % 7 === 0 ? 'color:#c2478a' : 'color:#374151')) + '">' + d + '</span>' +
+        list.map(function (a) {
+          return '<span style="display:flex;align-items:center;gap:4px;margin-top:2px"><span style="width:6px;height:6px;border-radius:50%;background:' + acts[a] + '"></span>' +
+            '<span style="font-size:9px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + a + '</span></span>';
+        }).join('') + '</div>';
+    }
+    return shell({
+      name: 'SWAPNIL DAFANE', role: 'COMP ADMIN', bell: 5, title: 'COMPLIANCE ADMIN DASHBOARD',
+      links: [['fa-tachometer-alt', 'COMP ADMIN DASHBOARD', true], ['fa-wrench', 'Admin Settings']],
+      cards: cards([
+        { icon: 'fas fa-plus', label: 'Assign Compliance / Notice', cls: 'c-info' },
+        { v: '28', label: 'Pending Compliance', cls: 'c-pending' },
+        { v: '113', label: 'Approved Compliance', cls: 'c-green' },
+        { v: '6', label: 'Overdue Compliance', cls: 'c-draft' }
+      ]),
+      body: '<div class="ui-cardbox"><div class="ui-cardbody">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+          '<span style="font-size:12px;font-weight:700;color:#3482AE;text-transform:uppercase;letter-spacing:.05em">September 2026</span>' +
+          '<span style="display:flex;gap:6px"><span class="ui-btn gray"><i class="fas fa-chevron-left"></i></span>' +
+          '<span class="ui-btn gray"><i class="fas fa-chevron-right"></i></span></span>' +
+        '</div>' + head +
+        '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#e5e7eb;border:1px solid #e5e7eb">' + cells + '</div>' +
+        '</div></div>',
+      extra: '<div class="js-calbtn" style="position:absolute;right:14px;top:57px;z-index:4"><span class="ui-btn"><i class="fas fa-calendar-alt"></i> Compliance Calendar</span></div>'
+    });
+  })(), notes: [
+    { sel: '.js-calbtn', at: 'side', y: 248, w: 208, text: 'Toggles between the calendar and the list.' },
+    { sel: '.js-ev', at: 'band', bx: 0.62, w: 330,
+      text: 'Click a compliance here to open it. The header button then reads <b>BACK TO CALENDAR</b>.' }
+  ] };
+
+  /* ── annotation engine ─────────────────────────────────────────────────── */
+  function place(shot, notes) {
+    var sr = shot.getBoundingClientRect();
+    var svgNS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('class', 'anno');
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + shot.offsetHeight);
+    var defs = document.createElementNS(svgNS, 'defs');
+    defs.innerHTML = '<marker id="mk' + Math.random().toString(36).slice(2) + '"></marker>';
+    shot.appendChild(svg);
+
+    notes.forEach(function (nt, idx) {
+      var el = shot.querySelector(nt.sel);
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      var box = { x: r.left - sr.left, y: r.top - sr.top, w: r.width, h: r.height };
+      var pad = 3;
+      var ring = document.createElement('div');
+      ring.className = 'ring';
+      ring.style.left = (box.x - pad) + 'px';
+      ring.style.top = (box.y - pad) + 'px';
+      ring.style.width = (box.w + pad * 2) + 'px';
+      ring.style.height = (box.h + pad * 2) + 'px';
+      shot.appendChild(ring);
+
+      var cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+
+      if (nt.n) {                                   /* numbered marker only */
+        var dot = document.createElement('div');
+        dot.className = 'dot';
+        dot.textContent = nt.n;
+        /* dp says which way to push the marker clear of the thing it marks */
+        var dp = nt.dp || 'tl', dxp = box.x - 12, dyp = box.y - 12;
+        if (dp === 'b')      { dxp = cx - 12;            dyp = box.y + box.h + 2; }
+        else if (dp === 't') { dxp = cx - 12;            dyp = box.y - 26; }
+        else if (dp === 'r') { dxp = box.x + box.w + 2;  dyp = cy - 12; }
+        else if (dp === 'l') { dxp = box.x - 20;         dyp = cy - 12; }
+        dot.style.left = dxp + 'px';
+        dot.style.top = dyp + 'px';
+        shot.appendChild(dot);
+        return;
+      }
+
+      var c = document.createElement('div');
+      c.className = 'call';
+      c.style.width = (nt.w || 240) + 'px';
+      c.innerHTML = nt.text;
+      shot.appendChild(c);
+      var ch = c.offsetHeight, cw = nt.w || 240;
+
+      /* Where a callout may sit without covering the screen it explains:
+           side — the empty lower part of the left menu
+           band — the strip of page background under the app
+         Everything else is measured off the target itself.                */
+      var gap = 30, left, top;
+      var at = nt.at || 'below';
+      if (at === 'side')       { left = 10;                 top = nt.y || 200; }
+      else if (at === 'band')  { left = W * (nt.bx || 0.5) - cw / 2;
+                                 top = shot.offsetHeight - ch - 14; }
+      else if (at === 'below') { left = cx - cw / 2;        top = box.y + box.h + gap; }
+      else if (at === 'above') { left = cx - cw / 2;        top = box.y - gap - ch; }
+      else if (at === 'left')  { left = box.x - gap - cw;   top = cy - ch / 2; }
+      else                     { left = box.x + box.w + gap; top = cy - ch / 2; }
+      left += (nt.dx || 0); top += (nt.dy || 0);
+      left = Math.max(8, Math.min(W - cw - 8, left));
+      top = Math.max(6, Math.min(shot.offsetHeight - ch - 6, top));
+      c.style.left = left + 'px';
+      c.style.top = top + 'px';
+
+      /* arrow: from the callout edge that faces the target, to the ring edge */
+      var ccx = left + cw / 2, ccy = top + ch / 2;
+      var dx = cx - ccx, dy = cy - ccy;
+      var sx, sy;
+      if (Math.abs(dx) > Math.abs(dy)) { sx = dx > 0 ? left + cw : left; sy = ccy; }
+      else                             { sx = ccx; sy = dy > 0 ? top + ch : top; }
+      var ex = cx, ey = cy;
+      var hw = box.w / 2 + pad + 3, hh = box.h / 2 + pad + 3;
+      var vx = sx - cx, vy = sy - cy;
+      var t = Math.min(Math.abs(vx) > 0.1 ? hw / Math.abs(vx) : 9, Math.abs(vy) > 0.1 ? hh / Math.abs(vy) : 9);
+      ex = cx + vx * t; ey = cy + vy * t;
+
+      var mx = (sx + ex) / 2 + (Math.abs(dx) > Math.abs(dy) ? 0 : (sy < ey ? 18 : -18));
+      var my = (sy + ey) / 2 + (Math.abs(dx) > Math.abs(dy) ? (sx < ex ? 16 : -16) : 0);
+      var p = document.createElementNS(svgNS, 'path');
+      p.setAttribute('d', 'M' + sx + ',' + sy + ' Q' + mx + ',' + my + ' ' + ex + ',' + ey);
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke', '#E8730C');
+      p.setAttribute('stroke-width', '2.4');
+      svg.appendChild(p);
+
+      /* arrow head, rotated along the final segment */
+      var ang = Math.atan2(ey - my, ex - mx) * 180 / Math.PI;
+      var head = document.createElementNS(svgNS, 'path');
+      head.setAttribute('d', 'M0,0 L-11,-5 L-11,5 Z');
+      head.setAttribute('fill', '#E8730C');
+      head.setAttribute('transform', 'translate(' + ex + ',' + ey + ') rotate(' + ang + ')');
+      svg.appendChild(head);
+    });
+  }
+
+  function fit() {
+    document.querySelectorAll('.stage').forEach(function (st) {
+      var shot = st.querySelector('.shot');
+      /* A stage inside a section the search has hidden measures zero — leaving
+         its zoom alone keeps the figure correct for when it comes back. */
+      if (!shot || !st.clientWidth) return;
+      shot.style.zoom = Math.min(1, st.clientWidth / W);
+    });
+  }
+
+  /* Idempotent on purpose: it is called once when the fonts settle and again on
+     load (the icon sheet arrives late and moves things), and a second call must
+     replace the figures rather than draw a second set under the first. */
+  function build() {
+    document.querySelectorAll('.stage').forEach(function (st) {
+      var spec = FIGS[st.getAttribute('data-fig')];
+      /* Skip a stage with no width: it is inside a section the search has
+         hidden, and every annotation would measure zero and land in the corner.
+         It is drawn properly by the rebuild that follows the search clearing. */
+      if (!spec || !st.clientWidth) return;
+      var old = st.querySelector('.shot');
+      if (old) st.removeChild(old);
+      var shot = document.createElement('div');
+      shot.className = 'shot';
+      shot.style.height = spec.h + 'px';
+      shot.innerHTML = spec.html;
+      st.appendChild(shot);
+      place(shot, spec.notes || []);
+    });
+    fit();
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(build).catch(build);
+  }
+  /* icons arrive with the Font Awesome sheet — measure again once it has */
+  window.addEventListener('load', build);
+  window.addEventListener('resize', fit);
+  window.addEventListener('beforeprint', fit);
+
+  /* the search below hides and restores sections, and must be able to redraw
+     any figure that was hidden while the page was still measuring itself */
+  window.__manualRedraw = build;
+})();
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FINDING THINGS
+   Fourteen sections is more than anyone wants to scroll. This adds a search
+   that keeps only the sections which answer the question, a "back to contents"
+   link on every heading, and a back-to-top button once the reader is deep in.
+   All of it is screen-only — the print rules hide the lot.
+   ══════════════════════════════════════════════════════════════════════════ */
+(function () {
+  var input = document.getElementById('q');
+  var clear = document.getElementById('qclr');
+  var info  = document.getElementById('searchinfo');
+  var roles = document.getElementById('roles');
+  var toc   = document.getElementById('toc');
+  var cover = document.querySelector('.cover');
+  var secs  = Array.prototype.slice.call(document.querySelectorAll('section'));
+  if (!input || !secs.length) return;
+
+  /* ── back to contents, on every section heading ─────────────────────────── */
+  secs.forEach(function (s) {
+    var h = s.querySelector('h2');
+    if (!h) return;
+    var a = document.createElement('a');
+    a.className = 'uptop no-print';
+    a.href = '#toc';
+    a.innerHTML = '<i class="fas fa-arrow-up"></i> &nbsp;Contents';
+    h.appendChild(a);
+  });
+
+  /* ── back to top ────────────────────────────────────────────────────────── */
+  var top = document.createElement('button');
+  top.className = 'totop no-print';
+  top.title = 'Back to top';
+  top.innerHTML = '<i class="fas fa-chevron-up"></i>';
+  top.onclick = function () { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  document.body.appendChild(top);
+  window.addEventListener('scroll', function () {
+    top.classList.toggle('on', window.scrollY > 700);
+  });
+
+  /* ── highlighting ───────────────────────────────────────────────────────── */
+  /* Marks are wrapped around text nodes and unwrapped again, never by rewriting
+     innerHTML: the figures are live DOM measured at build time, so replacing
+     their markup would throw the annotations away. .stage is skipped outright. */
+  function unmark(root) {
+    root.querySelectorAll('mark.hit').forEach(function (m) {
+      var p = m.parentNode;
+      if (!p) return;
+      p.replaceChild(document.createTextNode(m.textContent), m);
+      p.normalize();
+    });
+  }
+
+  function mark(root, words) {
+    var texts = [], walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    var n;
+    while ((n = walker.nextNode())) {
+      if (!n.nodeValue.trim()) continue;
+      var p = n.parentNode;
+      if (!p || (p.closest && p.closest('.stage, script, style, mark'))) continue;
+      texts.push(n);
+    }
+    texts.forEach(function (node) {
+      var val = node.nodeValue, low = val.toLowerCase();
+      var spans = [];
+      words.forEach(function (w) {
+        var i = low.indexOf(w);
+        while (i !== -1) { spans.push([i, i + w.length]); i = low.indexOf(w, i + w.length); }
+      });
+      if (!spans.length) return;
+      spans.sort(function (a, b) { return a[0] - b[0]; });
+      /* overlapping hits (one word inside another) must merge, or the second
+         wrap would run inside markup the first one just created */
+      var merged = [spans[0]];
+      spans.slice(1).forEach(function (s) {
+        var last = merged[merged.length - 1];
+        if (s[0] <= last[1]) last[1] = Math.max(last[1], s[1]);
+        else merged.push(s);
+      });
+      var frag = document.createDocumentFragment(), at = 0;
+      merged.forEach(function (s) {
+        if (s[0] > at) frag.appendChild(document.createTextNode(val.slice(at, s[0])));
+        var m = document.createElement('mark');
+        m.className = 'hit';
+        m.textContent = val.slice(s[0], s[1]);
+        frag.appendChild(m);
+        at = s[1];
+      });
+      if (at < val.length) frag.appendChild(document.createTextNode(val.slice(at)));
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+
+  /* ── the search itself ──────────────────────────────────────────────────── */
+  var searching = false;
+
+  function reset() {
+    secs.forEach(function (s) { s.classList.remove('is-hidden'); unmark(s); });
+    [roles, toc, cover].forEach(function (e) { if (e) e.classList.remove('is-hidden'); });
+    info.style.display = 'none';
+    clear.style.display = 'none';
+    /* figures hidden mid-measure come back blank — redraw them once */
+    if (searching && window.__manualRedraw) window.__manualRedraw();
+    searching = false;
+  }
+
+  function run() {
+    var q = input.value.trim().toLowerCase();
+    if (q.length < 2) { reset(); return; }
+
+    var words = q.split(/\s+/).filter(Boolean);
+    var hits = 0;
+
+    secs.forEach(function (s) {
+      unmark(s);
+      var text = s.textContent.toLowerCase();
+      var ok = words.every(function (w) { return text.indexOf(w) !== -1; });
+      s.classList.toggle('is-hidden', !ok);
+      if (ok) { hits++; mark(s, words); }
+    });
+
+    [roles, toc, cover].forEach(function (e) { if (e) e.classList.add('is-hidden'); });
+    clear.style.display = 'block';
+    info.style.display = 'block';
+    info.innerHTML = hits
+      ? '<b>' + hits + ' section' + (hits === 1 ? '' : 's') + '</b> mention “' + esc(input.value.trim()) +
+        '”. Everything else is hidden — <a id="qback">show the whole manual</a>.'
+      : 'Nothing in the manual mentions “' + esc(input.value.trim()) + '”. Try a shorter word — ' +
+        '<b>reject</b>, <b>overdue</b>, <b>attachment</b> — or <a id="qback">show the whole manual</a>.';
+    var back = document.getElementById('qback');
+    if (back) back.onclick = function () { input.value = ''; reset(); input.focus(); };
+    searching = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function esc(s) {
+    return s.replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  var timer;
+  input.addEventListener('input', function () {
+    clearTimeout(timer);
+    timer = setTimeout(run, 180);
+  });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { input.value = ''; reset(); }
+    if (e.key === 'Enter') { clearTimeout(timer); run(); }
+  });
+  clear.onclick = function () { input.value = ''; reset(); input.focus(); };
+
+  /* "/" jumps to the search from anywhere on the page */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== input) {
+      e.preventDefault();
+      input.focus();
+      input.select();
+    }
+  });
+})();
+</script>
+</body>
+</html>
