@@ -477,7 +477,7 @@ table.ui-t.wide td{padding:5px 2px}
         <span class="d">I raise a legal notice for my plant and close it, or I approve one.</span>
         <span class="go">Section 13 <i class="fas fa-arrow-right"></i></span>
       </a>
-      <a class="rolecard" href="#s16">
+      <a class="rolecard" href="#s17">
         <span class="r"><i class="fas fa-life-ring"></i>Something is wrong</span>
         <span class="d">A message I do not understand, or a record I cannot find.</span>
         <span class="go">Section 16 <i class="fas fa-arrow-right"></i></span>
@@ -518,9 +518,11 @@ table.ui-t.wide td{padding:5px 2px}
         <span class="what">The one flow a Plant HR starts: raising, submitting and getting it approved.</span></li>
       <li><a href="#s14">Everyday tools</a>
         <span class="what">The bell, the Time Period filter, search, export and the calendar.</span></li>
-      <li><a href="#s15">Status reference</a>
+      <li><a href="#s15">Month-end reminder mail</a>
+        <span class="what">The mail everyone with pending work receives on the last morning of the month.</span></li>
+      <li><a href="#s16">Status reference</a>
         <span class="what">What every badge means and who has to act next.</span></li>
-      <li><a href="#s16">If something goes wrong</a>
+      <li><a href="#s17">If something goes wrong</a>
         <span class="what">Common messages and problems, with the fix for each.</span></li>
     </ol>
   </div>
@@ -759,7 +761,7 @@ table.ui-t.wide td{padding:5px 2px}
         badge says so from your point of view (<span class="pill p-warn">Submission Pending</span>,
         <span class="pill p-warn">Pending</span>, <span class="pill p-warn">Final Approval Pending</span>);
         otherwise it shows the record's own state. The full list is in
-        <a href="#s15">section 15</a>.</li>
+        <a href="#s16">section 16</a>.</li>
     </ul>
 
     <div class="note">
@@ -1366,6 +1368,33 @@ table.ui-t.wide td{padding:5px 2px}
       There is no withdraw button. Once raised it stays on the record with its full Action History,
       whether it ends approved or is still going round the rejection loop.
     </div>
+
+    <h3 class="sub">The calendar on this screen</h3>
+    <p>
+      The Legal Notice screen has its own <b>CALENDAR</b> button, beside the title. It is the same
+      month view described in <a href="#s14">section 14</a>, and which records it draws depends on
+      what you do with notices:
+    </p>
+    <ul class="tight">
+      <li><b>Plant HR and Comp Admin</b> — the people who act on notices — get a calendar of
+          <b>legal notices only</b>. Their compliances have their own calendar on the compliance
+          screens, and keeping the two apart means each button shows the work that screen is about.</li>
+      <li><b>Everyone who only reads notices</b> — Comp Head, Group HR Head, CHD — gets a
+          <b>combined</b> calendar here: compliances and legal notices together, notices in red.
+          They have nothing to do on a notice, so a separate calendar of them would be a month view
+          with no actions in it.</li>
+    </ul>
+    <p>
+      Clicking a legal notice opens it on this screen; clicking a compliance takes you to the
+      compliance screen for your role. <b>BACK TO CALENDAR</b> returns you to the month you came
+      from, and switching tabs closes the calendar rather than leaving it behind the list.
+    </p>
+    <p>
+      <b>HCM Head and Authority have no calendar button</b>, here or on their compliance screens.
+      Both are oversight roles reading finished or nearly-finished work, and a month view of due
+      dates is there to catch a deadline before it slips — which is a submitter's and an approver's
+      job, not theirs.
+    </p>
   </section>
 
   <!-- ══════════════════════ 14. TOOLS ══════════════════════ -->
@@ -1384,6 +1413,12 @@ table.ui-t.wide td{padding:5px 2px}
     <ul class="tight">
       <li>The red count is the number of <b>unread items that require action</b> — not a total of all records.</li>
       <li>Opening a compliance marks its notification read, however you got there.</li>
+      <li>Clicking a line opens the record <b>on its list</b>, with the tabs, filters and calendar
+          still around it — so <b>Back</b> returns you to the list rather than to a dead end. You can
+          click a second notification without closing the first.</li>
+      <li>A request assigned with a frequency creates <b>one compliance per period</b> — a monthly
+          one assigned in September creates four, for September to December — and the bell shows
+          <b>one line for each</b>. The mail that accompanies it is a single message.</li>
       <li>The bell can only report what your dashboards have loaded, so it settles a moment after the page opens.</li>
     </ul>
 
@@ -1428,9 +1463,32 @@ table.ui-t.wide td{padding:5px 2px}
     </div>
 
     <p>
-      It is reached from the <b>COMPLIANCE CALENDAR</b> button at the top right of all four Comp Admin
-      screens — <b>Assign Compliance / Notice</b>, <b>Pending</b>, <b>Approved</b> and
-      <b>Overdue</b> — and shows the same month wherever you open it.
+      It is reached from the <b>COMPLIANCE CALENDAR</b> button at the top right of the list, and
+      shows the same month wherever you open it. Four roles have it:
+    </p>
+    <table class="doc">
+      <thead><tr><th style="width:30%">Role</th><th>Where the button is</th><th style="width:26%">What the calendar draws</th></tr></thead>
+      <tbody>
+        <tr><td><b>Comp Admin</b></td>
+            <td>Assign Compliance / Notice, Pending, Approved, Overdue</td>
+            <td>Compliances only — their legal notices have their own calendar on the Legal Notice
+                screen, where they act on them</td></tr>
+        <tr><td><b>Comp Head</b></td>
+            <td>Pending, Approved, Rejected</td>
+            <td>Compliances <b>and legal notices</b></td></tr>
+        <tr><td><b>Group HR Head (Corp HR)</b></td>
+            <td>Pending, Approved, Rejected</td>
+            <td>Compliances <b>and legal notices</b></td></tr>
+        <tr><td><b>CHD / Plant HR</b></td>
+            <td>Pending, Approved, Overdue</td>
+            <td>A Plant HR sees compliances only — their legal notices have their own calendar on
+                the Legal Notice screen. A CHD, who only reads notices, sees both here.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <b>Legal notices are drawn in red</b> and prefixed <code>LNTC/</code>, so they stand out from
+      compliances at a glance. Clicking one opens it on the Legal Notice screen for your role, not
+      in the Compliance View — they are different records with different actions.
     </p>
 
     <ol class="steps">
@@ -1455,8 +1513,75 @@ table.ui-t.wide td{padding:5px 2px}
   </section>
 
   <!-- ══════════════════════ 15. STATUS REFERENCE ══════════════════════ -->
+  <!-- ══════════════════════ 15. MONTH-END REMINDER ══════════════════════ -->
   <section id="s15">
-    <h2><span class="num">15</span> Status reference</h2>
+    <h2><span class="num">15</span> Month-end reminder mail</h2>
+    <p class="lead">
+      On the last morning of every month the portal writes to everybody who still has something
+      outstanding. You do not have to do anything to receive it, and there is nothing to switch on.
+    </p>
+
+    <table class="doc">
+      <tbody>
+        <tr><td style="width:26%"><b>When</b></td>
+            <td>The <b>last day of every month at 9:00 AM</b> — 30 September, 31 October, 28 or 29
+                February. It works the month out itself.</td></tr>
+        <tr><td><b>Who gets one</b></td>
+            <td>Anybody holding a compliance role who has pending or overdue work. If you are clear,
+                you get nothing — there is no "you have 0 pending" mail.</td></tr>
+        <tr><td><b>What it contains</b></td>
+            <td>Your counts, and a link to the portal. No attachment.</td></tr>
+        <tr><td><b>Copies</b></td>
+            <td>None. The mail goes to you alone.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub">What the mail says</h3>
+    <p>
+      The subject names only the flows you actually have, so a Plant HR with no open legal notice
+      does not see them mentioned:
+    </p>
+    <ul class="tight">
+      <li><code>IMMEDIATE ACTION REQUIRED ON PENDING / OVERDUE COMPLIANCES</code></li>
+      <li><code>… COMPLIANCES &amp; LEGAL NOTICES</code> — when you have both</li>
+    </ul>
+    <p>
+      Inside is a small table of your own figures, and they are <b>the same numbers as the cards on
+      your dashboard</b>. If the mail says 15 pending and 17 overdue, that is what you will find when
+      you log in. Nothing is added up across people.
+    </p>
+
+    <div class="note">
+      <p><b>Approvers have no Overdue figure, and the cell shows a dash rather than a zero.</b>
+      Only a compliance <i>nobody has submitted</i> can turn overdue by its due date passing. Once it
+      has been submitted it is waiting on an approver, and the flow never calls that overdue — which
+      is also why your dashboard has no Overdue card if you are a Comp Head, Group HR Head or HCM
+      Head. A zero there would read as "nothing of yours is late", a claim the system does not make.</p>
+    </div>
+
+    <h3 class="sub">The Comp Admin summary</h3>
+    <p>
+      The Comp Admins additionally receive one <b>oversight mail</b> with a spreadsheet attached,
+      <code>Month_End_Pending_&lt;Month&gt;&lt;Year&gt;.xlsx</code>. It lists every responsible person
+      with their four figures, exactly as each of them sees it. This is the only mail that carries an
+      attachment, and it is sent every month whether or not anything is outstanding — a report that
+      went quiet when the news was good could not be told apart from one that had stopped running.
+    </p>
+    <p>
+      A Comp Admin who also holds a compliance role receives <b>two</b> mails: their own reminder,
+      and the summary. They answer different questions.
+    </p>
+
+    <div class="note warn">
+      <p><b>The total on that sheet is a sum of dashboards, not the size of the backlog.</b>
+      A compliance sitting with a submitter and an approver appears on both their cards, so the
+      column counts it twice. The label on the total row says so. Use the per-person rows for
+      chasing; do not read the total as a record count.</p>
+    </div>
+  </section>
+
+  <section id="s16">
+    <h2><span class="num">16</span> Status reference</h2>
     <p class="lead">
       The badge in the Status column answers "where is this compliance?". When a record is waiting on
       <i>you</i>, the badge is written from your point of view.
@@ -1496,8 +1621,8 @@ table.ui-t.wide td{padding:5px 2px}
   </section>
 
   <!-- ══════════════════════ 16. TROUBLESHOOTING ══════════════════════ -->
-  <section id="s16">
-    <h2><span class="num">16</span> If something goes wrong</h2>
+  <section id="s17">
+    <h2><span class="num">17</span> If something goes wrong</h2>
 
     <table class="doc">
       <thead><tr><th style="width:34%">What you see</th><th>What it means and what to do</th></tr></thead>
