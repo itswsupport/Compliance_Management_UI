@@ -9,7 +9,7 @@ export default function AuthorityApproved() {
       title="AUTHORITY DASHBOARD"
       listTitle="Approved Compliance"
       headerColor="card-header-approved"
-      statusArray={[1, 22]}
+      statusArray={[1]}
       navCards={NAV}
       viewShowAction={false}
     />

@@ -95,18 +95,85 @@ export function yearsIn(list) {
 }
 
 /**
+ * Whether the SERVER has already narrowed this path by effective status.
+ *
+ * getComplianceList, getAuthorityPendingComplianceList and getPhrComplianceList
+ * run every row through effectiveStatus before returning it. What comes back is
+ * therefore already the tab's contents, and anything filtered on top of it is
+ * the same decision taken twice.
+ *
+ * getUserComplianceList - comp-head, corp-hr, hcm-head - does not, so those
+ * paths still need the client-side rule below.
+ */
+// NOT '/plant-hr/'. getPhrComplianceList narrows its APPROVED and OVERDUE
+// branches by effective status, but its outstanding branch only drops what is
+// now past due - approved rows still arrive on the pending fetch, because the
+// DAO's mstStatus==0 predicate lets master status 1 through. The rule below is
+// what removes them, so a compliance is not counted on Pending and Approved
+// both.
+const SERVER_NARROWS_BY_EFFECTIVE_STATUS = ['/comp-admin/', '/authority/'];
+
+export function serverAppliesEffectiveStatus(path) {
+  return SERVER_NARROWS_BY_EFFECTIVE_STATUS.some((p) => String(path || '').includes(p));
+}
+
+/**
  * What the user actually sees for a status set. The pending tabs hide records
  * that are already approved unless this user still has a waiting action row, so
  * a card counting a pending route has to apply the same rule or its number will
  * not match the list it opens.
+ *
+ * Skipped entirely where the server has already answered the question: those
+ * rows are chosen by EFFECTIVE status, and judging them again on the STORED one
+ * discards exactly the records the server meant to include.
  */
-export function visibleRows(list, isPendingTab, empCode) {
+/**
+ * The status a record should be READ as, which is not always the status stored
+ * on it.
+ *
+ * The server marks a compliance APPROVED at the second approval and only then
+ * opens the HCM Head's level-3 action row at FINAL_APPROVAL_PENDING, so a
+ * record can claim to be approved while an approval is still outstanding. Where
+ * that is true the open action row is the truth: the record is still waiting.
+ *
+ * Everything else falls straight through to its own status, including rows from
+ * the notice and legal notice flows, which carry no compActionList at all.
+ *
+ * NOTE: rebuilt from its two call sites (ComplianceListPage, DataTable) after
+ * the original was lost. Behaviour matches what those callers document; the
+ * wording is not the original.
+ */
+export function effectiveStatus(row) {
+  const status = Number(row?.status);
+  if (status !== STATUS.APPROVED) return status;
+  const finalApprovalOpen = (row?.compActionList || []).some(
+    (a) => Number(a.status) === STATUS.FINAL_APPROVAL_PENDING,
+  );
+  return finalApprovalOpen ? STATUS.FINAL_APPROVAL_PENDING : status;
+}
+
+export function visibleRows(list, isPendingTab, empCode, path) {
+  if (serverAppliesEffectiveStatus(path)) return list;
   if (!isPendingTab) return list;
   return list.filter((row) => {
+    // 22 is deliberately NOT here. The second approval closes the compliance
+    // (master := APPROVED) and only THEN writes the HCM Head's level-3 waiting
+    // row at 22 — see CompliancePortalServiceImpl, "Step 4: Send to HCM_HEAD".
+    // That row is never cleared, so treating it as "still mine" kept every
+    // finished compliance on the HCM Head's pending list for ever: 160 rows of
+    // which 159 were already approved and offered him no action to take.
+    //
+    // Dropping it costs nothing for the one case that IS his: a compliance
+    // genuinely awaiting final approval has master status 22, not 1, so the
+    // clause below keeps it regardless.
     const iAmStillWaiting = (row.compActionList || []).some(
       (a) => Number(a.authEmpCode) === Number(empCode) &&
-        [0, 5, 11, 22].includes(Number(a.status)),
+        [0, 5, 11].includes(Number(a.status)),
     );
-    return iAmStillWaiting || Number(row.status) !== STATUS.APPROVED;
+    // effectiveStatus, not row.status. A record the server closed at the second
+    // approval still reads 1 while its level-3 row is open, and it is genuinely
+    // still in flight - judging it on the stored status dropped it from Pending
+    // while the Approved tab had already excluded it, so it appeared nowhere.
+    return iAmStillWaiting || effectiveStatus(row) !== STATUS.APPROVED;
   });
 }

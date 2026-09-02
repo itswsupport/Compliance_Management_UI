@@ -175,6 +175,19 @@
   font-size: 13px !important;
 }
 
+/* Five or more cards have to share one line, so they lose padding and gap —
+   and only those. The icon and the label keep their size: shrinking the text
+   is what makes a crowded row look broken rather than tidy. */
+.stat-card-sm {
+  height: 72px !important;
+  padding: 4px 8px !important;
+  gap: 0 !important;
+}
+
+.stat-card-sm .icon {
+  margin-bottom: 0;
+}
+
 /* ── Table ── */
 .data-table {
   width: 100%;
@@ -370,7 +383,8 @@ input.form-input[readonly]:not(.cursor-pointer):not([type="file"]),
 input.form-input:read-only:not(.cursor-pointer):not([type="file"]),
 textarea.form-input[readonly]:not(.cursor-pointer),
 textarea.form-input:read-only:not(.cursor-pointer),
-#comp_act_attachment {
+#comp_act_attachment,
+#legal_attachment {
   width: 100%;
   height: 28px;
   background-color: #E6F2FF !important;
@@ -466,31 +480,47 @@ textarea.form-input:disabled {
   border-radius: 4px !important;
 }
 
-/* Action History table keeps the old format: darker brand-blue header, zebra
-   rows, and the bolder badge weight (700). Scoped so other tables stay the same. */
-#complianceActionHistory .badge {
+/* Action History tables keep the old format: darker brand-blue header, zebra
+   rows, and the bolder badge weight (700). Scoped so other tables stay the same.
+
+   Both action histories are named on every rule rather than the legal notice one
+   getting a copy of its own. They are the same table showing the same six things
+   about the same kind of flow, and two blocks would drift the first time either
+   was touched. */
+#complianceActionHistory .badge,
+#legalNoticeActionHistory .badge {
   font-weight: 700 !important;
 }
 #complianceActionHistory th,
-#complianceActionHistory thead th {
+#complianceActionHistory thead th,
+#legalNoticeActionHistory th,
+#legalNoticeActionHistory thead th {
   background: #3482AE !important;
 }
-#complianceActionHistory tbody tr:nth-child(even) {
+#complianceActionHistory tbody tr:nth-child(even),
+#legalNoticeActionHistory tbody tr:nth-child(even) {
   background-color: #f2f2f2;
 }
 /* Full cell borders (grid lines) for the old-format look */
-#complianceActionHistory {
+#complianceActionHistory,
+#legalNoticeActionHistory {
   border: 1px solid #d1d5db !important;
 }
 #complianceActionHistory th,
-#complianceActionHistory td {
+#complianceActionHistory td,
+#legalNoticeActionHistory th,
+#legalNoticeActionHistory td {
   border: 1px solid #d1d5db !important;
 }
 /* Tighter rows + 12px text */
 #complianceActionHistory th,
 #complianceActionHistory thead th,
 #complianceActionHistory td,
-#complianceActionHistory tbody td {
+#complianceActionHistory tbody td,
+#legalNoticeActionHistory th,
+#legalNoticeActionHistory thead th,
+#legalNoticeActionHistory td,
+#legalNoticeActionHistory tbody td {
   padding: 6px 16px !important;
   font-size: 12px !important;
 }
@@ -583,7 +613,8 @@ textarea.form-input:disabled {
 .card-header-info,
 .card-header-primary,
 .card-header-overdue,
-.card-header-notice {
+.card-header-notice,
+.card-header-legal {
   padding: 8px 22px !important;
   border-top-left-radius: 4px !important;
   /* rounded-t */
@@ -626,7 +657,17 @@ textarea.form-input:disabled {
    rejected, light blue overdue — and a notice is none of those. It carries no
    status at all, so it gets the one colour that says nothing about one. */
 .card-header-notice {
-  background-color: #68b2f7 !important;
+  background-color: #4ca1f0 !important;
+  color: #ffffff !important;
+}
+
+/* Legal notice. Deep indigo, chosen against the notice blue beside it rather
+   than in isolation: the two sit next to each other in the reader roles' card
+   row, and a legal notice is a different thing from a notice — it carries a
+   flow, an approval and a due date. Still outside the status hues, because the
+   card names a place to go rather than a state a record is in. */
+.card-header-legal {
+  background-color: #FFC107 !important;
   color: #ffffff !important;
 }
 
@@ -654,7 +695,14 @@ textarea.form-input:disabled {
 /* Pairs with .card-header-notice, the way bg-c-info pairs with
    .card-header-info — the card and the screen it opens wear one colour. */
 .bg-c-notice {
-  background-color: #68b2f7 !important;
+  background-color: #4ca1f0 !important;
+  color: #ffffff !important;
+}
+
+/* Pairs with .card-header-legal, the same way bg-c-notice pairs with
+   .card-header-notice — the card and the screen it opens wear one colour. */
+.bg-c-legal {
+  background-color: #FFC107  !important;
   color: #ffffff !important;
 }
 
@@ -983,7 +1031,8 @@ body.modal-open .z-\[9999\] * {
 .card-header-info h3,
 .card-header-primary h3,
 .card-header-overdue h3,
-.card-header-notice h3 {
+.card-header-notice h3,
+.card-header-legal h3 {
   color: #ffffff !important;
   font-weight: bold !important;
   font-size: 12px !important;
@@ -1003,6 +1052,7 @@ body.modal-open .z-\[9999\] * {
 .card-header-primary h3 i,
 .card-header-overdue h3 i,
 .card-header-notice h3 i,
+.card-header-legal h3 i,
 .custom-card-header h3 i,
 .custom-card-header1 h3 i {
   font-size: 13px !important;
@@ -1468,4 +1518,31 @@ body .swal2-container .swal2-styled.swal2-cancel {
 
   padding-right: 20px;
   border-radius: 4px;
+}
+
+/* ── Notification bell count ──────────────────────────────────────────────
+   A slow, shallow pulse on the red badge so an unread count catches the eye
+   without nagging. Opacity only, and it never fades out completely — the
+   number stays readable at every point in the cycle, which a true blink
+   (on/off) does not.
+
+   The glow is a box-shadow rather than a transform so the badge does not
+   move; a badge that grows and shrinks reads as jittery next to a fixed
+   navbar. Purely presentational: nothing about which notifications are
+   counted, or when they clear, is touched by this. */
+@keyframes bell-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.55);
+  }
+
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0);
+  }
+}
+
+.bell-badge-blink {
+  animation: bell-badge-pulse 1.6s ease-in-out infinite !important;
 }

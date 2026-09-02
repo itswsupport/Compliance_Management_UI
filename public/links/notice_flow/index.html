@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Notice routing in the Rucha Compliance Portal — which roles are mailed, how many mails are sent, and how the two approval flows compare.">
+<link rel="icon" type="image/png" href="/compliance/Ruchapvtlogo.png">
+<title>Notice Routing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+</head>
+<body>
+<style>
+  /* ── Tokens ──────────────────────────────────────────────────────────
+     Grounded in the portal's own palette: #3482AE is the brand blue the
+     dashboards use, #68b2f7 is the colour the NOTICE card and header wear.
+     Neutrals carry a blue bias so they sit with the brand rather than
+     reading as default grey. */
+  :root {
+    --paper:      #ffffff;
+    --raised:     #f4f7f9;
+    --sunken:     #eaeff3;
+    --line:       #d7e0e7;
+    --line-soft:  #e7edf1;
+    --ink:        #16222c;
+    --ink-2:      #3d4e5c;
+    --muted:      #5d7183;
+    --brand:      #2b6f97;
+    --notice:     #3f97e8;
+    --yes:        #2f9d7e;
+    --no:         #c93c4e;
+    --warn:       #d97d2b;
+    --code-bg:    #eef3f7;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #0f1820;
+      --raised:     #16222c;
+      --sunken:     #1b2935;
+      --line:       #2a3d4c;
+      --line-soft:  #223343;
+      --ink:        #e6eef4;
+      --ink-2:      #b8c9d6;
+      --muted:      #8ba1b3;
+      --brand:      #6fb3d8;
+      --notice:     #68b2f7;
+      --yes:        #5fcaa8;
+      --no:         #ef8494;
+      --warn:       #f0a95e;
+      --code-bg:    #16222c;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #0f1820;
+    --raised:     #16222c;
+    --sunken:     #1b2935;
+    --line:       #2a3d4c;
+    --line-soft:  #223343;
+    --ink:        #e6eef4;
+    --ink-2:      #b8c9d6;
+    --muted:      #8ba1b3;
+    --brand:      #6fb3d8;
+    --notice:     #68b2f7;
+    --yes:        #5fcaa8;
+    --no:         #ef8494;
+    --warn:       #f0a95e;
+    --code-bg:    #16222c;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.62;
+    margin: 0;
+    padding: 0 20px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  .prose { max-width: 68ch; }
+
+  /* ── Masthead ── */
+  header.top {
+    border-bottom: 2px solid var(--ink);
+    padding: 56px 0 20px;
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+  h1 {
+    font-family: 'Exo', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: clamp(34px, 6vw, 52px);
+    line-height: 1.04;
+    letter-spacing: -.015em;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  header.top p {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 17.5px;
+    max-width: 62ch;
+  }
+
+  /* ── Sections ── */
+  section { margin: 0 0 56px; }
+  h2 {
+    font-family: 'Exo', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 25px;
+    letter-spacing: -.01em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  h2 + .sub {
+    color: var(--muted);
+    font-size: 14.5px;
+    margin: 0 0 22px;
+    max-width: 66ch;
+  }
+  h3 {
+    font-family: 'Exo', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin: 34px 0 10px;
+  }
+  p { margin: 0 0 15px; }
+
+  /* ── Figures ── */
+  figure {
+    margin: 26px 0 0;
+    padding: 22px 20px 16px;
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+  }
+  .figscroll { overflow-x: auto; }
+  figure svg {
+    display: block;
+    width: 100%;
+    min-width: 620px;
+    height: auto;
+    color: var(--ink-2);
+  }
+  figcaption {
+    margin-top: 16px;
+    padding-top: 13px;
+    border-top: 1px solid var(--line-soft);
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  figcaption b { color: var(--ink-2); font-weight: 600; }
+
+  /* ── Tables ── */
+  .tablewrap { overflow-x: auto; margin: 22px 0 0; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 540px;
+    font-size: 14.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    text-align: left;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 0 14px 9px 0;
+    border-bottom: 1px solid var(--ink-2);
+    white-space: nowrap;
+  }
+  td {
+    padding: 11px 14px 11px 0;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+    color: var(--ink-2);
+  }
+  td:first-child { color: var(--ink); font-weight: 500; }
+  td.num { text-align: right; padding-right: 26px; }
+
+  /* ── Inline bits ── */
+  code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: .875em;
+    background: var(--code-bg);
+    padding: 1.5px 5px;
+    border-radius: 2px;
+    color: var(--ink);
+  }
+  .yes { color: var(--yes); font-weight: 600; }
+  .no  { color: var(--no);  font-weight: 600; }
+
+  /* ── Callout ── */
+  .note {
+    border-left: 3px solid var(--notice);
+    background: var(--sunken);
+    padding: 15px 18px;
+    margin: 24px 0 0;
+    border-radius: 0 3px 3px 0;
+  }
+  .note.caution { border-left-color: var(--warn); }
+  .note > strong {
+    display: block;
+    font-family: 'Exo', ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    margin-bottom: 4px;
+    color: var(--ink);
+  }
+  .note p { margin: 0; font-size: 14.5px; color: var(--ink-2); }
+  .note p + p { margin-top: 9px; }
+
+  /* ── Steps: a real sequence, so it is numbered ── */
+  ol.steps { margin: 20px 0 0; padding: 0; list-style: none; counter-reset: s; }
+  ol.steps li {
+    counter-increment: s;
+    position: relative;
+    padding: 0 0 16px 44px;
+    border-left: 1px solid var(--line);
+    margin-left: 13px;
+  }
+  ol.steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  ol.steps li::before {
+    content: counter(s);
+    position: absolute;
+    left: -13px; top: -1px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  ol.steps b { color: var(--ink); }
+  ol.steps li > span { display: block; color: var(--ink-2); font-size: 15px; }
+
+  ul.plain { margin: 16px 0 0; padding-left: 20px; }
+  ul.plain li { margin-bottom: 9px; color: var(--ink-2); }
+  ul.plain li b { color: var(--ink); }
+
+  footer {
+    margin-top: 72px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  a { color: var(--brand); }
+  a:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">Rucha Compliance Portal</p>
+    <h1>Notice Routing</h1>
+    <p>Where a notice goes after the Compliance Admin publishes it — which roles are mailed,
+       how many mails are actually sent, and why that differs from a compliance.</p>
+  </header>
+
+  <!-- ══════════ 1 · WHO ══════════ -->
+  <section>
+    <h2>Who a notice reaches</h2>
+    <p class="sub">Recipients are never chosen by hand. They are read from the same tables the
+      compliance approval flow routes through.</p>
+
+    <figure>
+      <div class="figscroll">
+        <svg viewBox="0 0 900 430" role="img"
+             aria-label="A notice's audience is resolved from three tables. The plant's row in comp_reporting_grid_mst plus allhead_plant_master supply five per-plant roles: Plant HR, Group HR, Comp Head, HCM Head and CHD. comp_login_access supplies Authority, who receives every notice. Compliance Admins, including the publisher, are excluded.">
+          <defs>
+            <marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="3.2" orient="auto">
+              <path d="M0,0 L8,3.2 L0,6.4 Z" fill="currentColor"/>
+            </marker>
+            <marker id="ahn" markerWidth="9" markerHeight="9" refX="8" refY="3.2" orient="auto">
+              <path d="M0,0 L8,3.2 L0,6.4 Z" fill="var(--no)"/>
+            </marker>
+          </defs>
+
+          <!-- source tables -->
+          <text x="20" y="30" font-family="IBM Plex Mono, monospace" font-size="10.5"
+                letter-spacing="1.4" fill="var(--muted)">SOURCE TABLES</text>
+
+          <rect x="20" y="46" width="216" height="52" rx="2" fill="var(--paper)"
+                stroke="var(--line)" stroke-width="1"/>
+          <text x="32" y="70" font-family="IBM Plex Mono, monospace" font-size="11.5"
+                fill="var(--ink)">allhead_plant_master</text>
+          <text x="32" y="87" font-size="11.5" fill="var(--muted)">plant_hr_id</text>
+
+          <rect x="20" y="118" width="216" height="70" rx="2" fill="var(--paper)"
+                stroke="var(--notice)" stroke-width="1.5"/>
+          <text x="32" y="142" font-family="IBM Plex Mono, monospace" font-size="11.5"
+                fill="var(--ink)">comp_reporting_grid_mst</text>
+          <text x="32" y="159" font-size="11.5" fill="var(--muted)">plant_hr · group_hr_head</text>
+          <text x="32" y="175" font-size="11.5" fill="var(--muted)">comp_head · hcm_head · comp_admin</text>
+
+          <rect x="20" y="208" width="216" height="52" rx="2" fill="var(--paper)"
+                stroke="var(--line)" stroke-width="1"/>
+          <text x="32" y="232" font-family="IBM Plex Mono, monospace" font-size="11.5"
+                fill="var(--ink)">comp_login_access</text>
+          <text x="32" y="249" font-size="11.5" fill="var(--muted)">role_id 6 — Authority</text>
+
+          <!-- arrows into resolver -->
+          <line x1="236" y1="72"  x2="316" y2="140" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+          <line x1="236" y1="153" x2="316" y2="153" stroke="var(--notice)" stroke-width="1.8" marker-end="url(#ah)"/>
+          <line x1="236" y1="234" x2="316" y2="168" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+
+          <!-- resolver -->
+          <rect x="324" y="110" width="152" height="88" rx="2" fill="var(--sunken)"
+                stroke="var(--ink-2)" stroke-width="1.4"/>
+          <text x="400" y="140" text-anchor="middle" font-family="Exo, sans-serif"
+                font-weight="600" font-size="14" fill="var(--ink)">Resolve</text>
+          <text x="400" y="159" text-anchor="middle" font-size="11.5" fill="var(--muted)">for each plant</text>
+          <text x="400" y="177" text-anchor="middle" font-size="11.5" fill="var(--muted)">the notice names</text>
+
+          <!-- outcome arrows -->
+          <line x1="476" y1="132" x2="556" y2="92"  stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+          <text x="492" y="100" font-size="10.5" fill="var(--muted)">named on that row</text>
+
+          <line x1="476" y1="154" x2="556" y2="248" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+          <text x="492" y="205" font-size="10.5" fill="var(--muted)">company-wide</text>
+
+          <line x1="476" y1="176" x2="556" y2="340" stroke="var(--no)" stroke-width="1.2"
+                stroke-dasharray="5 4" marker-end="url(#ahn)"/>
+          <text x="486" y="300" font-size="10.5" fill="var(--no)">excluded</text>
+
+          <!-- outcome: per plant -->
+          <rect x="560" y="40" width="320" height="152" rx="2" fill="var(--paper)"
+                stroke="var(--notice)" stroke-width="1.5"/>
+          <text x="576" y="62" font-family="IBM Plex Mono, monospace" font-size="10.5"
+                letter-spacing="1.2" fill="var(--notice)">MAILED — SELECTED PLANT ONLY</text>
+          <text x="576" y="87"  font-size="12.5" fill="var(--ink)">Plant HR</text>
+          <text x="576" y="108" font-size="12.5" fill="var(--ink)">Group HR Head</text>
+          <text x="576" y="129" font-size="12.5" fill="var(--ink)">Comp Head</text>
+          <text x="576" y="150" font-size="12.5" fill="var(--ink)">HCM Head</text>
+          <text x="576" y="171" font-size="12.5" fill="var(--ink)">CHD</text>
+
+          <!-- outcome: everything -->
+          <rect x="560" y="212" width="320" height="72" rx="2" fill="var(--paper)"
+                stroke="var(--line)" stroke-width="1"/>
+          <text x="576" y="234" font-family="IBM Plex Mono, monospace" font-size="10.5"
+                letter-spacing="1.2" fill="var(--muted)">MAILED — EVERY NOTICE</text>
+          <text x="576" y="259" font-size="12.5" fill="var(--ink)">Authority</text>
+          <text x="576" y="276" font-size="11" fill="var(--muted)">whichever plant the notice names</text>
+
+          <!-- outcome: never -->
+          <rect x="560" y="304" width="320" height="72" rx="2" fill="var(--paper)"
+                stroke="var(--no)" stroke-width="1.2" stroke-dasharray="5 4"/>
+          <text x="576" y="326" font-family="IBM Plex Mono, monospace" font-size="10.5"
+                letter-spacing="1.2" fill="var(--no)">NEVER MAILED</text>
+          <text x="576" y="351" font-size="12.5" fill="var(--ink)">Compliance Admin</text>
+          <text x="576" y="368" font-size="11" fill="var(--muted)">including whoever published it</text>
+
+          <!-- footnote -->
+          <text x="20" y="404" font-size="11" fill="var(--muted)">A person is excluded by employee code, not by row — holding the admin role anywhere removes them entirely.</text>
+        </svg>
+      </div>
+      <figcaption><b>Fig. 1</b> — The audience comes from the plant's own row in the reporting
+        grid, so a notice reaches exactly the people already responsible for that plant. Only
+        Authority is company-wide; only the Compliance Admin is excluded.</figcaption>
+    </figure>
+
+    <div class="note">
+      <strong>The grid's <code>comp_admin</code> column holds the CHD</strong>
+      <p>Despite its name, that column names employee <code>100803</code> on all 18 rows, whose
+         login role is <code>role_id 7</code> (CHD). It is read as a recipient. Actual Compliance
+         Admins are excluded by employee code before any of this runs.</p>
+    </div>
+  </section>
+
+  <!-- ══════════ 2 · HOW MANY MAILS ══════════ -->
+  <section>
+    <h2>Why 22 people get 13 mails</h2>
+    <p class="sub">One mail per audience, not one per person and not one per plant. People who
+      cover the same plants read the same mail, so they share a send.</p>
+
+    <figure>
+      <div class="figscroll">
+        <svg viewBox="0 0 900 340" role="img"
+             aria-label="For an ALL PLANTS notice, 22 recipients are grouped by the set of plants each one covers. Recipients sharing a plant set share a single mail: the HCM Head, CHD and eight Authorities all cover all 18 plants and receive one mail between them, while each Plant HR gets a mail naming only their own plants. 22 people become 13 sends.">
+          <defs>
+            <marker id="ah2" markerWidth="9" markerHeight="9" refX="8" refY="3.2" orient="auto">
+              <path d="M0,0 L8,3.2 L0,6.4 Z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <text x="20" y="28" font-family="IBM Plex Mono, monospace" font-size="10.5"
+                letter-spacing="1.4" fill="var(--muted)">22 RECIPIENTS</text>
+          <text x="486" y="28" font-family="IBM Plex Mono, monospace" font-size="10.5"
+                letter-spacing="1.4" fill="var(--muted)">13 SENDS</text>
+
+          <!-- row 1 -->
+          <rect x="20" y="42" width="300" height="46" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="32" y="62" font-size="12.5" fill="var(--ink)">HCM Head · CHD · Authority ×8</text>
+          <text x="32" y="79" font-size="11" fill="var(--muted)">all 18 plants</text>
+          <line x1="320" y1="65" x2="478" y2="65" stroke="var(--notice)" stroke-width="1.8" marker-end="url(#ah2)"/>
+          <text x="352" y="58" font-size="10.5" fill="var(--notice)">same plant set</text>
+          <rect x="486" y="42" width="394" height="46" rx="2" fill="var(--paper)" stroke="var(--notice)" stroke-width="1.5"/>
+          <text x="498" y="62" font-size="12.5" fill="var(--ink)">1 mail · 10 addresses</text>
+          <text x="498" y="79" font-size="11" fill="var(--muted)">lists all 18 plants</text>
+
+          <!-- row 2 -->
+          <rect x="20" y="102" width="300" height="46" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="32" y="122" font-size="12.5" fill="var(--ink)">Group HR — srnikam@</text>
+          <text x="32" y="139" font-size="11" fill="var(--muted)">1002 1004 1005 1007 1041 1042 2001</text>
+          <line x1="320" y1="125" x2="478" y2="125" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah2)"/>
+          <rect x="486" y="102" width="394" height="46" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="498" y="122" font-size="12.5" fill="var(--ink)">1 mail · 1 address</text>
+          <text x="498" y="139" font-size="11" fill="var(--muted)">lists their 7 plants</text>
+
+          <!-- row 3 -->
+          <rect x="20" y="162" width="300" height="46" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="32" y="182" font-size="12.5" fill="var(--ink)">Plant HR — hr@</text>
+          <text x="32" y="199" font-size="11" fill="var(--muted)">1001 1012 1014 9001</text>
+          <line x1="320" y1="185" x2="478" y2="185" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah2)"/>
+          <rect x="486" y="162" width="394" height="46" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="498" y="182" font-size="12.5" fill="var(--ink)">1 mail · 1 address</text>
+          <text x="498" y="199" font-size="11" fill="var(--muted)">lists their 4 plants</text>
+
+          <!-- row 4 -->
+          <rect x="20" y="222" width="300" height="46" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="32" y="242" font-size="12.5" fill="var(--ink)">9 more Plant &amp; Group HRs</text>
+          <text x="32" y="259" font-size="11" fill="var(--muted)">each a different plant set</text>
+          <line x1="320" y1="245" x2="478" y2="245" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah2)"/>
+          <rect x="486" y="222" width="394" height="46" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="498" y="242" font-size="12.5" fill="var(--ink)">10 mails</text>
+          <text x="498" y="259" font-size="11" fill="var(--muted)">one each, own plants only</text>
+
+          <line x1="20" y1="292" x2="880" y2="292" stroke="var(--line)" stroke-width="1"/>
+          <text x="20" y="316" font-size="12" fill="var(--muted)">Nobody appears in two mails. Every plant has its Plant HR reached exactly once.</text>
+        </svg>
+      </div>
+      <figcaption><b>Fig. 2</b> — Grouping is by <b>plant label</b>, so the ten people who cover
+        all 18 plants share a single mail while each Plant HR gets one naming only their own.
+        Verified across three ALL PLANTS runs: 22 recipients, 13 sends, no duplicates.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ══════════ 3 · NO FLOW ══════════ -->
+  <section>
+    <h2>A notice has no flow</h2>
+    <p class="sub">This is what separates it from everything else in the portal. Both
+      compliance flows are drawn alongside for comparison.</p>
+
+    <figure>
+      <div class="figscroll">
+        <svg viewBox="0 0 900 470" role="img"
+             aria-label="Three chains side by side. A notice has two steps: the Comp Admin publishes, and everyone mapped to the plant reads it. Approval Flow 1 runs Comp Admin assign, CHD submission, Comp Head approve or reject, HCM Head approve or reject, closed. Approval Flow 2 is the same but the CHD is replaced by the Plant HR of that plant code, and the first approval is by the Group HR Head. In both flows a rejection at either approval level returns the record to whoever submitted it.">
+          <defs>
+            <marker id="d" markerWidth="9" markerHeight="9" refX="8" refY="3.2" orient="auto">
+              <path d="M0,0 L8,3.2 L0,6.4 Z" fill="currentColor"/>
+            </marker>
+            <marker id="dr" markerWidth="9" markerHeight="9" refX="8" refY="3.2" orient="auto">
+              <path d="M0,0 L8,3.2 L0,6.4 Z" fill="var(--no)"/>
+            </marker>
+          </defs>
+          <text x="122" y="26" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="var(--notice)">NOTICE</text>
+          <text x="422" y="26" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="var(--muted)">APPROVAL FLOW 1</text>
+          <text x="722" y="26" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="var(--muted)">APPROVAL FLOW 2</text>
+          <rect x="24" y="44" width="196" height="54" rx="2" fill="var(--paper)" stroke="var(--notice)" stroke-width="1.5"/>
+          <text x="122" y="65" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.1" fill="var(--muted)">COMP ADMIN</text>
+          <text x="122" y="84" text-anchor="middle" font-size="12.5" fill="var(--ink)">Publish</text>
+          <line x1="122" y1="98" x2="122" y2="122" stroke="var(--notice)" stroke-width="1.4" marker-end="url(#d)"/>
+          <rect x="24" y="122" width="196" height="54" rx="2" fill="var(--paper)" stroke="var(--notice)" stroke-width="1.5"/>
+          <text x="122" y="143" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.1" fill="var(--muted)">EVERY MAPPED ROLE</text>
+          <text x="122" y="162" text-anchor="middle" font-size="12.5" fill="var(--ink)">Read</text>
+          <text x="122" y="218" text-anchor="middle" font-size="12" fill="var(--muted)">Ends here.</text>
+          <text x="122" y="236" text-anchor="middle" font-size="12" fill="var(--muted)">No status, no due date,</text>
+          <text x="122" y="254" text-anchor="middle" font-size="12" fill="var(--muted)">no approver.</text>
+          <rect x="324" y="44" width="196" height="54" rx="2" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+          <text x="422" y="65" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.1" fill="var(--muted)">COMP ADMIN</text>
+          <text x="422" y="84" text-anchor="middle" font-size="12.5" fill="var(--ink)">Assign compliance</text>
+          <line x1="422" y1="98" x2="422" y2="122" stroke="currentColor" stroke-width="1.4" marker-end="url(#d)"/>
+          <rect x="324" y="122" width="196" height="54" rx="2" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+          <text x="422" y="143" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.1" fill="var(--muted)">CHD</text>
+          <text x="422" y="162" text-anchor="middle" font-size="12.5" fill="var(--ink)">Submission</text>
+          <text x="422" y="190" text-anchor="middle" font-size="10" fill="var(--muted)">comp_reporting_grid_mst</text>
+          <line x1="422" y1="196" x2="422" y2="218" stroke="currentColor" stroke-width="1.4" marker-end="url(#d)"/>
+          <rect x="324" y="218" width="196" height="54" rx="2" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+          <text x="422" y="239" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.1" fill="var(--muted)">COMP HEAD</text>
+          <text x="422" y="258" text-anchor="middle" font-size="12.5" fill="var(--ink)">Approve / Reject</text>
+          <line x1="422" y1="272" x2="422" y2="294" stroke="currentColor" stroke-width="1.4" marker-end="url(#d)"/>
+          <rect x="324" y="294" width="196" height="54" rx="2" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+          <text x="422" y="315" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.1" fill="var(--muted)">HCM HEAD</text>
+          <text x="422" y="334" text-anchor="middle" font-size="12.5" fill="var(--ink)">Approve / Reject</text>
+          <line x1="422" y1="348" x2="422" y2="370" stroke="currentColor" stroke-width="1.4" marker-end="url(#d)"/>
+          <rect x="324" y="370" width="196" height="40" rx="2" fill="var(--sunken)" stroke="var(--line)"/>
+          <text x="422" y="395" text-anchor="middle" font-size="12.5" fill="var(--ink)">Closed</text>
+          <path d="M520,245 H550 V143 H522" fill="none" stroke="var(--no)" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#dr)"/>
+          <path d="M520,321 H572 V161 H522" fill="none" stroke="var(--no)" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#dr)"/>
+          <rect x="624" y="44" width="196" height="54" rx="2" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+          <text x="722" y="65" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.1" fill="var(--muted)">COMP ADMIN</text>
+          <text x="722" y="84" text-anchor="middle" font-size="12.5" fill="var(--ink)">Assign compliance</text>
+          <line x1="722" y1="98" x2="722" y2="122" stroke="currentColor" stroke-width="1.4" marker-end="url(#d)"/>
+          <rect x="624" y="122" width="196" height="54" rx="2" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+          <text x="722" y="143" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.1" fill="var(--muted)">PLANT HR</text>
+          <text x="722" y="162" text-anchor="middle" font-size="12.5" fill="var(--ink)">Submission</text>
+          <text x="722" y="190" text-anchor="middle" font-size="10" fill="var(--muted)">by plant code</text>
+          <line x1="722" y1="196" x2="722" y2="218" stroke="currentColor" stroke-width="1.4" marker-end="url(#d)"/>
+          <rect x="624" y="218" width="196" height="54" rx="2" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+          <text x="722" y="239" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.1" fill="var(--muted)">GROUP HR HEAD</text>
+          <text x="722" y="258" text-anchor="middle" font-size="12.5" fill="var(--ink)">Approve / Reject</text>
+          <line x1="722" y1="272" x2="722" y2="294" stroke="currentColor" stroke-width="1.4" marker-end="url(#d)"/>
+          <rect x="624" y="294" width="196" height="54" rx="2" fill="var(--paper)" stroke="var(--line)" stroke-width="1"/>
+          <text x="722" y="315" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.1" fill="var(--muted)">HCM HEAD</text>
+          <text x="722" y="334" text-anchor="middle" font-size="12.5" fill="var(--ink)">Approve / Reject</text>
+          <line x1="722" y1="348" x2="722" y2="370" stroke="currentColor" stroke-width="1.4" marker-end="url(#d)"/>
+          <rect x="624" y="370" width="196" height="40" rx="2" fill="var(--sunken)" stroke="var(--line)"/>
+          <text x="722" y="395" text-anchor="middle" font-size="12.5" fill="var(--ink)">Closed</text>
+          <path d="M820,245 H850 V143 H822" fill="none" stroke="var(--no)" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#dr)"/>
+          <path d="M820,321 H872 V161 H822" fill="none" stroke="var(--no)" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#dr)"/>
+          <text x="24" y="444" font-size="11" fill="var(--no)">Dashed — a rejection at either level goes straight back to whoever submitted it, with the approver’s comment.</text>
+          <text x="24" y="462" font-size="11" fill="var(--muted)">Which flow a request takes is set per subcategory in Admin Settings.</text>
+        </svg>
+      </div>
+      <figcaption><b>Fig. 3</b> — A notice is published and read. A compliance carries a
+        status and two approval levels, either of which can send it back. The two flows differ
+        only in who does the work and who gives the first approval — <b>Flow 1</b> is the CHD
+        answering to the Comp Head, <b>Flow 2</b> the plant’s own Plant HR answering to the
+        Group HR Head. Final approval is the HCM Head either way.</figcaption>
+    </figure>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Stage</th><th>Flow 1 — CHD</th><th>Flow 2 — PHR</th><th>Resolved from</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Assign</td><td>Comp Admin</td><td>Comp Admin</td><td>—</td></tr>
+          <tr><td>Submission</td><td>CHD</td><td>Plant HR of that plant code</td>
+              <td><code>grid.comp_admin</code> / <code>allhead_plant_master.plant_hr_id</code></td></tr>
+          <tr><td>First approval</td><td>Comp Head</td><td>Group HR Head</td>
+              <td><code>grid.comp_head</code> / <code>grid.group_hr_head</code></td></tr>
+          <tr><td>Final approval</td><td>HCM Head</td><td>HCM Head</td>
+              <td><code>grid.hcm_head</code></td></tr>
+          <tr><td>On rejection</td><td>back to the CHD</td><td>back to the Plant HR</td>
+              <td><code>responsiblePersonEmpCode</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════ 3b · MAILS ══════════ -->
+  <section>
+    <h2>Every mail the portal sends</h2>
+    <p class="sub">Ten triggers in total. The <b>TO</b> is whoever must act next; the <b>CC</b>
+      follows one rule, drawn below.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Trigger</th><th>Mailed to</th><th>CC</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Notice published</td>
+            <td>Every mapped role — one mail per plant set</td>
+            <td><span class="no">none</span> — an admin published it</td>
+          </tr>
+          <tr>
+            <td>Compliance assigned</td>
+            <td>The doer — CHD (Flow&nbsp;1) or Plant HR (Flow&nbsp;2)</td>
+            <td><span class="no">none</span> — an admin assigned it</td>
+          </tr>
+          <tr>
+            <td>Submitted</td>
+            <td>First approver — Comp Head or Group HR Head</td>
+            <td>every Comp Admin</td>
+          </tr>
+          <tr>
+            <td>Re-submitted</td>
+            <td>The same first approver</td>
+            <td>every Comp Admin</td>
+          </tr>
+          <tr>
+            <td>First approval — approved</td>
+            <td>HCM Head</td>
+            <td>every Comp Admin</td>
+          </tr>
+          <tr>
+            <td>First approval — rejected</td>
+            <td>Back to the doer, with the approver’s comment</td>
+            <td>every Comp Admin</td>
+          </tr>
+          <tr>
+            <td>Final approval — approved</td>
+            <td>The Comp Admin who raised it</td>
+            <td>Comp Admins not already in TO</td>
+          </tr>
+          <tr>
+            <td>Final approval — rejected</td>
+            <td>Back to the doer</td>
+            <td>every Comp Admin</td>
+          </tr>
+          <tr>
+            <td>Due in 1–5 days</td>
+            <td>Whoever holds it now — daily 08:45 IST, so up to five reminders</td>
+            <td>every Comp Admin</td>
+          </tr>
+          <tr>
+            <td>Overdue</td>
+            <td>Whoever holds it now — once, on the due date</td>
+            <td>every Comp Admin</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <figure>
+      <div class="figscroll">
+        <svg viewBox="0 0 900 250" role="img"
+             aria-label="The CC rule. The employee code of whoever performed the action is checked against the Comp Admin role. If they hold it, the CC stays empty, because CCing someone on their own action is pointless. If they do not, every active Comp Admin is CCd, and anyone already in the TO line is then removed so nobody receives the mail twice. Scheduled reminders pass employee code zero, which counts as not an admin, so admins are CCd on those.">
+          <defs>
+            <marker id="m" markerWidth="9" markerHeight="9" refX="8" refY="3.2" orient="auto">
+              <path d="M0,0 L8,3.2 L0,6.4 Z" fill="currentColor"/>
+            </marker>
+            <marker id="mn" markerWidth="9" markerHeight="9" refX="8" refY="3.2" orient="auto">
+              <path d="M0,0 L8,3.2 L0,6.4 Z" fill="var(--notice)"/>
+            </marker>
+          </defs>
+
+          <rect x="20" y="88" width="176" height="56" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="108" y="112" text-anchor="middle" font-size="12.5" fill="var(--ink)">Who performed</text>
+          <text x="108" y="130" text-anchor="middle" font-size="12.5" fill="var(--ink)">the action</text>
+
+          <line x1="196" y1="116" x2="240" y2="116" stroke="currentColor" stroke-width="1.4" marker-end="url(#m)"/>
+
+          <rect x="248" y="80" width="196" height="72" rx="2" fill="var(--sunken)" stroke="var(--ink-2)" stroke-width="1.4"/>
+          <text x="346" y="106" text-anchor="middle" font-size="12.5" fill="var(--ink)">Do they hold the</text>
+          <text x="346" y="124" text-anchor="middle" font-size="12.5" fill="var(--ink)">Comp Admin role?</text>
+          <text x="346" y="142" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">comp_login_access</text>
+
+          <path d="M444,104 H486 V60 H520" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#m)"/>
+          <text x="452" y="76" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)">YES</text>
+
+          <path d="M444,128 H486 V176 H520" fill="none" stroke="var(--notice)" stroke-width="1.6" marker-end="url(#mn)"/>
+          <text x="452" y="170" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--notice)">NO</text>
+
+          <rect x="528" y="34" width="196" height="52" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="626" y="56" text-anchor="middle" font-size="12.5" fill="var(--ink)">CC stays empty</text>
+          <text x="626" y="74" text-anchor="middle" font-size="11" fill="var(--muted)">it was their own action</text>
+
+          <rect x="528" y="150" width="196" height="52" rx="2" fill="var(--paper)" stroke="var(--notice)" stroke-width="1.5"/>
+          <text x="626" y="172" text-anchor="middle" font-size="12.5" fill="var(--ink)">CC every Comp Admin</text>
+          <text x="626" y="190" text-anchor="middle" font-size="11" fill="var(--muted)">active employees only</text>
+
+          <line x1="724" y1="176" x2="762" y2="176" stroke="var(--notice)" stroke-width="1.6" marker-end="url(#mn)"/>
+
+          <rect x="770" y="150" width="110" height="52" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="825" y="172" text-anchor="middle" font-size="12" fill="var(--ink)">minus anyone</text>
+          <text x="825" y="190" text-anchor="middle" font-size="12" fill="var(--ink)">already in TO</text>
+
+          <text x="20" y="228" font-size="11" fill="var(--muted)">Scheduled reminders pass employee code 0 — not an admin — so the admins are CC’d on due-soon and overdue mails.</text>
+        </svg>
+      </div>
+      <figcaption><b>Fig. 4</b> — The CC list is never passed in by a caller; it is derived here
+        from <code>role_id 1</code> in <code>comp_login_access</code>, so moving the admin role to
+        another employee is a database change, not a code change. The final step stops anyone
+        appearing in both TO and CC.</figcaption>
+    </figure>
+
+    <div class="note">
+      <strong>No email address means no mail, and the record is still saved</strong>
+      <p>If a recipient has no valid address the send is skipped and the compliance or notice is
+         committed anyway. That is deliberate — a mail server being unreachable must never
+         destroy work that was already done.</p>
+    </div>
+  </section>
+
+  <!-- ══════════ 3c · BY ROLE ══════════ -->
+  <section>
+    <h2>What lands in your inbox</h2>
+    <p class="sub">The same ten triggers, read the other way round — by the role receiving them.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Role</th><th>Compliance mails</th><th>Notice mails</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Comp Admin</td>
+            <td>Final approval of anything they raised. <b>CC on every action a non-admin
+                takes</b>, which in practice is most of the traffic.</td>
+            <td><span class="no">None</span> — they publish them</td>
+          </tr>
+          <tr>
+            <td>CHD</td>
+            <td>Assigned (Flow&nbsp;1) · rejected back, from either approval level</td>
+            <td>Their mapped plants</td>
+          </tr>
+          <tr>
+            <td>Plant HR</td>
+            <td>Assigned (Flow&nbsp;2) · rejected back, from either approval level ·
+                due-soon and overdue reminders</td>
+            <td>Their mapped plants</td>
+          </tr>
+          <tr>
+            <td>Comp Head</td>
+            <td>Submitted and re-submitted (Flow&nbsp;1)</td>
+            <td>Their mapped plants</td>
+          </tr>
+          <tr>
+            <td>Group HR Head</td>
+            <td>Submitted and re-submitted (Flow&nbsp;2)</td>
+            <td>Their mapped plants</td>
+          </tr>
+          <tr>
+            <td>HCM Head</td>
+            <td><b>One</b> — “Approved by … Pending Final Approval”, when the first
+                approver clears a request</td>
+            <td>Their mapped plants</td>
+          </tr>
+          <tr>
+            <td>Authority</td>
+            <td><span class="no">None at all</span></td>
+            <td><b>Every notice</b>, whichever plant it names</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note caution">
+      <strong>The Authority receives no compliance mail whatsoever</strong>
+      <p>The word <code>AUTHORITY</code> does not appear once in the compliance service. They are
+         never a TO, and the CC list is built from the admin role alone — so nothing about a
+         compliance ever reaches them by mail. Their dashboard is the only way they learn anything,
+         and they must go and look.</p>
+      <p>Notices are the exact opposite: an Authority is the one role that receives <em>every</em>
+         one, regardless of plant.</p>
+    </div>
+
+    <div class="note caution">
+      <strong>Nothing chases a request sitting with an approver</strong>
+      <p>The daily 08:45 job scans <code>findByStatus(0)</code> — submission-pending only. A
+         request that has been submitted and is waiting at <b>Approval Pending</b> (11) or
+         <b>Final Approval Pending</b> (22) is never scanned, so it sends no reminder and never
+         flips to Overdue, however long it sits there.</p>
+      <p>In practice: due-soon and overdue mails only ever reach the <b>doer</b>. A Comp Head,
+         Group HR Head or HCM Head is never chased.</p>
+    </div>
+  </section>
+
+  <!-- ══════════ 4 · PUBLISHING ══════════ -->
+  <section>
+    <h2>Publishing one</h2>
+    <p class="sub">Comp Admin only, from the same screen that assigns compliances.</p>
+
+    <ol class="steps">
+      <li><span><b>Request Type</b> → <code>Notice</code>. The form opens on
+        <code>Compliance</code>; switching swaps Frequency and Due Date out for a
+        Notice Description.</span></li>
+      <li><span><b>Select Plant</b>, or <code>ALL PLANTS</code> to publish everywhere at once.</span></li>
+      <li><span><b>Category</b> and <b>Subcategory</b> — the same act masters the compliance form
+        uses. The subcategory becomes the notice's <b>Subject</b>.</span></li>
+      <li><span><b>Attachment</b> — PDF, Excel, JPG or PNG, up to 50 MB. The file name may use
+        letters, numbers, spaces and <code>. - _ ( )</code> only.</span></li>
+      <li><span><b>Notice Description</b> — optional, shown in the mail and on the board.</span></li>
+      <li><span><b>Submit</b>. Published immediately, mails sent, bell rows written. There is no
+        confirmation step because there is nothing to approve.</span></li>
+    </ol>
+
+    <div class="note caution">
+      <strong>ALL PLANTS behaves the opposite way to a compliance</strong>
+      <p>A notice is <em>one</em> notice stored per plant — one number, one document, and one mail
+         per audience. An ALL PLANTS <em>compliance</em> creates 18 separate records, each with its
+         own Sr. No. and approval chain, so a Plant HR covering four plants gets four mails.</p>
+    </div>
+  </section>
+
+  <!-- ══════════ 5 · AFTER ══════════ -->
+  <section>
+    <h2>After it is published</h2>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>What</th><th>Behaviour</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Mail</td>
+            <td>One per audience. Names only that person's plants, links nothing —
+                the document lives on the dashboard, not in the mail.</td>
+          </tr>
+          <tr>
+            <td>Bell</td>
+            <td>One row per recipient in <code>compliance_notifications</code>, type
+                <code>NOTICE</code>, at <code>authLevel 0</code>. Opening the Notice Dashboard
+                clears <em>all</em> of them in one call — a compliance notification clears only
+                when you open that record.</td>
+          </tr>
+          <tr>
+            <td>Dashboard</td>
+            <td>Read-only for every role. Period filter matches on the <b>published</b> date,
+                and carries over to the compliance tabs.</td>
+          </tr>
+          <tr>
+            <td>Withdraw</td>
+            <td>Comp Admin only, and only when reached from the Comp Admin dashboard. Removes
+                every plant row, the document, and the bell rows that announced it.</td>
+          </tr>
+          <tr>
+            <td>Subject line</td>
+            <td><code>NTC/08/26/012 Compliance Notice Published By : SAGAR SHEWALKAR</code> —
+                the same shape the compliance mails use.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <strong>No email address means no bell either</strong>
+      <p>A recipient without a valid address is skipped before the bell row is written, so they
+         get neither the mail nor the notification — though the notice is still on their dashboard.
+         A <em>compliance</em> writes the bell row regardless. Worth aligning if it matters.</p>
+    </div>
+  </section>
+
+  <!-- ══════════ 6 · REFERENCE ══════════ -->
+  <section>
+    <h2>Where it lives</h2>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Layer</th><th>Path</th><th>Does</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Tables</td><td><code>compliance_notice</code><br><code>compliance_notifications</code></td><td>one row per plant per notice · one row per recipient</td></tr>
+          <tr><td>Service</td><td><code>notice/service/NoticeServiceImpl</code></td><td>save, resolve audience, mail, delete</td></tr>
+          <tr><td>Endpoints</td><td><code>notice/save · list · details · download · delete</code></td><td>publish, read, attachment, withdraw</td></tr>
+          <tr><td>Bell</td><td><code>notifications/mark-notice-read</code></td><td>clears every NOTICE row for one employee</td></tr>
+          <tr><td>Form</td><td><code>pages/compAdmin/AssignCompliance.jsx</code></td><td>request type + both forms</td></tr>
+          <tr><td>Board</td><td><code>pages/notice/NoticeDashboard.jsx</code></td><td>list, filter, withdraw</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note caution">
+      <strong>Two open items</strong>
+      <p><code>DELETE /notice/delete</code> takes only an <code>id</code> — it checks nobody. The
+         withdraw button is hidden for non-admins in the UI, but the API is not protected.</p>
+      <p><code>pages/notice/AddNotice.jsx</code> is dead code: its logic moved into the merged
+         Assign form and nothing imports it.</p>
+    </div>
+  </section>
+
+  <footer>
+    Verified against <code>comp_reporting_grid_mst</code> across single-plant sends (1001, 1004,
+    1006, 1007, 1041, 9001) and three ALL PLANTS runs.
+  </footer>
+
+</div>
+
+</body>
+</html>

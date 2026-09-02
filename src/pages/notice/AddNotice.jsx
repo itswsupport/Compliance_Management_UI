@@ -79,8 +79,9 @@ export default function AddNotice({ onSaved }) {
     if (!form.plant)                e.plant = 'PLEASE SELECT PLANT';
     if (!form.noticeCategory)          e.noticeCategory = 'PLEASE SELECT NOTICE CATEGORY';
     if (!form.noticeSubCategory)       e.noticeSubCategory = 'PLEASE SELECT NOTICE SUBCATEGORY';
-    if (!form.attachment)           e.attachment = 'PLEASE SELECT FILE ATTACHMENT';
-    else if (fileError(form.attachment)) e.attachment = fileError(form.attachment);
+    // Optional. Still checked when one IS chosen — an unreadable or oversized
+    // file is a problem whether or not it had to be there.
+    if (form.attachment && fileError(form.attachment)) e.attachment = fileError(form.attachment);
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -114,7 +115,10 @@ export default function AddNotice({ onSaved }) {
     fd.append('empCode', user?.empCode || localStorage.getItem(LS_KEYS.GLOBAL_EMP_CODE));
     // ...1, matching the server's param name — the entity already owns a String
     // `noticeAttachment`, which the binder would claim first.
-    fd.append('noticeAttachment1', form.attachment);
+    // Appended only when there is one. FormData turns a null into the STRING
+    // "null", which the server would bind as a MultipartFile it cannot read —
+    // an empty field has to be an absent field, not an empty-looking one.
+    if (form.attachment) fd.append('noticeAttachment1', form.attachment);
 
     setSaving(true);
     try {
@@ -235,7 +239,8 @@ export default function AddNotice({ onSaved }) {
             {/* ATTACHMENT */}
             <div className="form-group">
               <label className="form-label">
-                ATTACHMENT <span className="text-[#FF0000] ml-0.5 text-[11px] font-normal">(NOTICE DOCUMENT.)</span> <span className="text-red-500 font-bold ml-0.5">*</span>
+                ATTACHMENT <span className="text-[#FF0000] ml-0.5 text-[11px] font-normal">(NOTICE DOCUMENT.)</span>
+                <span className="text-gray-400 font-normal normal-case ml-1">(optional)</span>
               </label>
               <input
                 key={fileKey}

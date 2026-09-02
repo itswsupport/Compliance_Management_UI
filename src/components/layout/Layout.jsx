@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import { useIdleLogout } from '../../hooks/useIdleLogout';
-import { recordSection } from '../../utils/navSection';
+import { recordSection, recordScreen } from '../../utils/navSection';
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
@@ -15,7 +15,13 @@ export default function Layout({ children }) {
   // Every route reports which dashboard it belongs to, so returning to the
   // Comp Admin dashboard from Admin Settings — or from anywhere else that is
   // not a compliance list — counts as an arrival and leads with the calendar.
-  useEffect(() => { recordSection(pathname); }, [pathname]);
+  useEffect(() => {
+    recordSection(pathname);
+    // ...and the screen, transient ones included. A useEffect, so it runs AFTER
+    // the page's own useLayoutEffect has read the previous value — the page
+    // asks "where did I come from", and it must not be answered with "here".
+    recordScreen(pathname);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

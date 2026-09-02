@@ -26,6 +26,10 @@ function RouteTitle() {
     let name;
     if (path.includes('/admin')) {
       name = 'Admin Settings';
+    } else if (path.includes('/legal-notice')) {
+      // Before the /notice branch, not after: "/legal-notice/list" contains
+      // "/notice" as a substring, so testing for notices first would claim it.
+      name = 'Legal Notice Dashboard';
     } else if (path.includes('/notice')) {
       // Special-cased like /admin: keying on the last segment would put a
       // generic 'list' in the map, which any future route could claim.
@@ -85,6 +89,11 @@ import AuthorityView     from '../pages/authority/ComplianceView';
 // Notice — read by every role, published by the Compliance Admin from the
 // dashboard itself (the Add Notice form is a card on it, not a page).
 import NoticeDashboard from '../pages/notice/NoticeDashboard';
+
+// Legal Notice — raised by a Plant HR, approved by the Comp Admin, read by
+// everyone else. One screen: the tabs, the Add form and the detail view are all
+// states of it, which is why there is a single route rather than four.
+import LegalNoticeDashboard from '../pages/legalNotice/LegalNoticeDashboard';
 
 // Admin Settings
 import ActTypeMaster    from '../pages/adminSettings/ComplianceActTypeMaster';
@@ -160,6 +169,23 @@ export default function AppRouter() {
         <Route path="/notice"      element={<ProtectedRoute><NoticeDashboard /></ProtectedRoute>} />
         <Route path="/notice/list" element={<ProtectedRoute><NoticeDashboard /></ProtectedRoute>} />
         <Route path="/notice/add"  element={<Navigate to="/notice/list" replace />} />
+
+        {/* Legal Notice.
+
+            One screen, reached two ways, and the PATH says which — no state, no
+            guessing from the user's roles. "/legal-notice/list" is the sidebar's
+            workspace, where a Plant HR raises and submits and a Comp Admin
+            approves. "/<dashboard>/legal-notice" is the read-only view a reader
+            opens from the card on their own dashboard, and it keeps them in that
+            dashboard's section rather than moving them somewhere new. */}
+        <Route path="/legal-notice"      element={<Navigate to="/legal-notice/list" replace />} />
+        <Route path="/legal-notice/list" element={<ProtectedRoute><LegalNoticeDashboard /></ProtectedRoute>} />
+
+        <Route path="/plant-hr/legal-notice"  element={<ProtectedRoute><LegalNoticeDashboard /></ProtectedRoute>} />
+        <Route path="/comp-head/legal-notice" element={<ProtectedRoute><LegalNoticeDashboard /></ProtectedRoute>} />
+        <Route path="/corp-hr/legal-notice"   element={<ProtectedRoute><LegalNoticeDashboard /></ProtectedRoute>} />
+        <Route path="/hcm-head/legal-notice"  element={<ProtectedRoute><LegalNoticeDashboard /></ProtectedRoute>} />
+        <Route path="/authority/legal-notice" element={<ProtectedRoute><LegalNoticeDashboard /></ProtectedRoute>} />
 
         {/* Admin Settings */}
         {/* Admin Settings opens on the first section; the nav cards sit above

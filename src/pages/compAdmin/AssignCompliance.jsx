@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
 import SearchableSelect from '../../components/ui/SearchableSelect';
+import ComplianceCalendar from '../../components/ui/ComplianceCalendar';
 import DashboardNavCards, { clearCardCache, clearSectionCache } from '../../components/ui/DashboardNavCards';
 import {
   getPlantList, saveCompliance, getComplianceFlowStatus,
@@ -15,9 +16,19 @@ import { todayDate, currentTime } from '../../utils/formatters';
 import { LS_KEYS, FREQUENCY_OPTIONS } from '../../utils/constants';
 import { ACCEPT, FILE_HINT, fileError } from '../../utils/attachments';
 import { getPeriod } from '../../utils/periodFilter';
+import { fetchComplianceRows, filterByPeriod } from '../../utils/complianceRows';
 import { NAV_CARDS_BY_SECTION } from '../../utils/navCards';
 
 const NAV_CARDS = NAV_CARDS_BY_SECTION['comp-admin'];
+
+/**
+ * What the calendar on this page draws: everything still outstanding.
+ *
+ * The same set the Overdue and Pending tabs give it, so the calendar shows the
+ * same month wherever it is opened from. Approved (1) is absent — it is
+ * finished, and has no due date left worth looking at.
+ */
+const CALENDAR_STATUSES = [0, 3, 4, 11, 2, 5];
 
 // Sentinel for the "all plants" row. Not a plant id, so it can never collide.
 const ALL_PLANTS = 'ALL';
@@ -46,6 +57,11 @@ export default function AssignCompliance() {
   // what it has always been. The dropdown is still the first field, so raising
   // a notice instead is one click — but the common case costs none.
   const [requestType, setRequestType] = useState('COMPLIANCE');
+  // The calendar is a reference while assigning — what is already due, and
+  // when — so it sits ABOVE the form rather than replacing it. Replacing would
+  // unmount a half-filled form and lose what had been typed.
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarRows, setCalendarRows] = useState([]);
 
   const [plants, setPlants]       = useState([]);
   const [actTypes, setActTypes]   = useState([]);
@@ -151,8 +167,17 @@ export default function AssignCompliance() {
       }
     }
 
-    if (!form.attachment) e.attachment = 'PLEASE SELECT FILE ATTACHMENT';
-    else if (fileError(form.attachment)) e.attachment = fileError(form.attachment);
+    // Required for a compliance act — the document IS the compliance, and there
+    // is nothing to submit against without it. Optional for a notice, which can
+    // be nothing more than the words in its description.
+    //
+    // A file that IS chosen is checked either way: oversized or wrongly named is
+    // a problem whether or not it had to be there.
+    if (requestType !== 'NOTICE' && !form.attachment) {
+      e.attachment = 'PLEASE SELECT FILE ATTACHMENT';
+    } else if (form.attachment && fileError(form.attachment)) {
+      e.attachment = fileError(form.attachment);
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -188,7 +213,10 @@ export default function AssignCompliance() {
     fd.append('empCode', user?.empCode || localStorage.getItem(LS_KEYS.GLOBAL_EMP_CODE));
     // ...1, matching the server's param name — the entity already owns a String
     // `noticeAttachment`, which the binder would claim first.
-    fd.append('noticeAttachment1', form.attachment);
+    // Only when there is one. FormData turns a null into the STRING "null",
+    // which the server would bind as a MultipartFile it cannot read — an absent
+    // file has to be an absent field, not an empty-looking one.
+    if (form.attachment) fd.append('noticeAttachment1', form.attachment);
 
     setSaving(true);
     try {
@@ -340,6 +368,23 @@ export default function AssignCompliance() {
   }
 
   const isAsWhen     = form.compFrequency === 'AS & WHEN';
+  /**
+   * Load the calendar's rows the first time it is opened, not on page load.
+   *
+   * This page exists to assign, not to browse; most visits never open the
+   * calendar, and a query nobody asked for would compete with the plant and act
+   * lists the form itself needs.
+   */
+  useEffect(() => {
+    if (!calendarOpen || !user || calendarRows.length > 0) return;
+    let cancelled = false;
+    fetchComplianceRows(user, CALENDAR_STATUSES, '/comp-admin/assign')
+      .then((rows) => { if (!cancelled) setCalendarRows(rows); })
+      .catch(() => { /* leave it empty; the form is unaffected */ });
+    return () => { cancelled = true; };
+  }, [calendarOpen, user, calendarRows.length]);
+
+
   const isNotice     = requestType === 'NOTICE';
   const isCompliance = requestType === 'COMPLIANCE';
 
@@ -349,6 +394,17 @@ export default function AssignCompliance() {
         <h1 className="section-title">
           COMPLIANCE ADMIN DASHBOARD
         </h1>
+        {/* Same button, same words and same place as the one on the Pending and
+            Overdue tabs, so the calendar is reached the same way wherever the
+            admin happens to be standing. */}
+        <button
+          type="button"
+          onClick={() => setCalendarOpen((open) => !open)}
+          className="px-2.5 py-1.5 bg-[#3482AE] hover:bg-[#2A6B91] text-white text-[10px] leading-none uppercase rounded-sm border-0 cursor-pointer transition-colors inline-flex items-center gap-1 shrink-0"
+        >
+          <i className="fas fa-calendar-alt" />
+          Compliance Calendar
+        </button>
       </div>
 
       {/* Nav cards — same component the list pages use, so the counts shown
@@ -360,6 +416,16 @@ export default function AssignCompliance() {
           filtered ones, so the numbers appeared to change on their own when
           moving between them. */}
       <DashboardNavCards cards={NAV_CARDS} period={getPeriod()} />
+
+      {/* Above the form, not instead of it: this page is where a compliance is
+          written, and the calendar is what you check while writing it. Swapping
+          the form out would unmount it and lose whatever had been entered. */}
+      {calendarOpen && (
+        <ComplianceCalendar
+          data={filterByPeriod(calendarRows, getPeriod().year, getPeriod().month)}
+          loading={calendarRows.length === 0}
+        />
+      )}
 
       {/* Form card */}
       <div className="card">
@@ -487,7 +553,7 @@ export default function AssignCompliance() {
                         <div className="relative">
                           <input
                             type="text"
-                            className="form-input w-full bg-white cursor-pointer"
+                            className="form-input w-full bg-white cursor-pointer pr-7"
                             value={form.startDate}
                             readOnly
                             placeholder="YYYY-MM-DD"
@@ -510,6 +576,15 @@ export default function AssignCompliance() {
                               }
                             }}
                           />
+                          {/* The visible field is a read-only text box — the
+                              real <input type="date"> sits behind it at
+                              opacity-0 and is opened by showPicker(). Without
+                              this glyph the box looked like a plain text field
+                              and gave no sign it was a date at all.
+
+                              pointer-events-none so the click falls through to
+                              the text box, which is what opens the picker. */}
+                          <i className="fas fa-calendar-alt absolute right-2 top-1/2 -translate-y-1/2 text-[#3482AE] text-[12px] pointer-events-none" />
                         </div>
                         {errors.startDate && <p className="text-red-500 text-[10px] mt-1">{errors.startDate}</p>}
                       </div>
@@ -518,7 +593,7 @@ export default function AssignCompliance() {
                         <div className="relative">
                           <input
                             type="text"
-                            className="form-input w-full bg-white cursor-pointer"
+                            className="form-input w-full bg-white cursor-pointer pr-7"
                             value={form.endDate}
                             readOnly
                             placeholder="YYYY-MM-DD"
@@ -541,6 +616,15 @@ export default function AssignCompliance() {
                               }
                             }}
                           />
+                          {/* The visible field is a read-only text box — the
+                              real <input type="date"> sits behind it at
+                              opacity-0 and is opened by showPicker(). Without
+                              this glyph the box looked like a plain text field
+                              and gave no sign it was a date at all.
+
+                              pointer-events-none so the click falls through to
+                              the text box, which is what opens the picker. */}
+                          <i className="fas fa-calendar-alt absolute right-2 top-1/2 -translate-y-1/2 text-[#3482AE] text-[12px] pointer-events-none" />
                         </div>
                         {errors.endDate && <p className="text-red-500 text-[10px] mt-1">{errors.endDate}</p>}
                       </div>
@@ -551,7 +635,7 @@ export default function AssignCompliance() {
                       <div className="relative">
                         <input
                           type="text"
-                          className="form-input w-full bg-white cursor-pointer"
+                          className="form-input w-full bg-white cursor-pointer pr-7"
                           value={form.firstDueDate}
                           readOnly
                           placeholder="YYYY-MM-DD"
@@ -574,6 +658,15 @@ export default function AssignCompliance() {
                             }
                           }}
                         />
+                          {/* The visible field is a read-only text box — the
+                              real <input type="date"> sits behind it at
+                              opacity-0 and is opened by showPicker(). Without
+                              this glyph the box looked like a plain text field
+                              and gave no sign it was a date at all.
+
+                              pointer-events-none so the click falls through to
+                              the text box, which is what opens the picker. */}
+                          <i className="fas fa-calendar-alt absolute right-2 top-1/2 -translate-y-1/2 text-[#3482AE] text-[12px] pointer-events-none" />
                       </div>
                       {errors.firstDueDate && <p className="text-red-500 text-[10px] mt-1">{errors.firstDueDate}</p>}
                     </div>
@@ -584,7 +677,10 @@ export default function AssignCompliance() {
               {/* ATTACHMENT — the same field, the same words, either way. */}
               <div className="form-group">
                 <label className="form-label">
-                  ATTACHMENT <span className="text-[#FF0000] ml-0.5 text-[11px] font-normal">(COMPLIANCE ACT/NOTIFICATION DOCUMENT.)</span> <span className="text-red-500 font-bold ml-0.5">*</span>
+                  ATTACHMENT <span className="text-[#FF0000] ml-0.5 text-[11px] font-normal">(COMPLIANCE ACT/NOTIFICATION DOCUMENT.)</span>
+                  {isNotice
+                    ? <span className="text-gray-400 font-normal normal-case ml-1">(optional)</span>
+                    : <span className="text-red-500 font-bold ml-0.5">*</span>}
                 </label>
                 <input
                   key={fileKey}

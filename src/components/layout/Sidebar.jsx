@@ -1,6 +1,7 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { PORTAL_URL } from '../../utils/constants';
+import { sectionOf } from '../../utils/navSection';
 import Swal from 'sweetalert2';
 
 // `label` is either a string or, where two roles share one entry, a function of
@@ -55,6 +56,23 @@ const NAV_ITEMS = [
   // that card is the way in — a sidebar link beside it would be a second door
   // to the same room. See NAV_CARDS on the dashboard pages.
   {
+    id: 'legal_notice',
+    // Plant HR and Comp Admin only. For them legal notices are a place of work
+    // with tabs of their own — raise one, submit it, approve it — so it earns a
+    // sidebar entry the way a dashboard does, and it deliberately has NO card on
+    // their compliance row: one door, not two, the same rule the notice entry
+    // above is absent for. Every other role reads legal notices instead, and
+    // reaches them by the Legal Notice card on their dashboard (see navCards).
+    label: 'Legal Notice',
+    icon: 'fas fa-gavel',
+    to: '/legal-notice/list',
+    // Not the CHD, though they share the Plant HR's dashboard: a CHD only reads
+    // legal notices, so they reach them by the Legal Notice card on that
+    // dashboard, the way HCM Head and Authority do. The sidebar entry is for the
+    // two roles that work here.
+    show: (u) => u.isPlantHr || u.isCompAdmin,
+  },
+  {
     id: 'admin_settings',
     label: 'Admin Settings',
     icon: 'fas fa-wrench',
@@ -65,6 +83,23 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logoutUser } = useAuth();
+  const { pathname } = useLocation();
+
+  /**
+   * Which entry is highlighted: the one whose SECTION the user is in, not the
+   * one whose exact path they are on.
+   *
+   * Every dashboard entry points at a single landing tab — Plant HR at
+   * /plant-hr/pending — so NavLink's own matching lit it up on that one tab and
+   * nowhere else. /plant-hr/approved highlighted nothing at all, and
+   * /plant-hr/legal-notice highlighted LEGAL NOTICE, which is a different
+   * dashboard's entry: the user had not left the Plant HR dashboard, only opened
+   * a card on it.
+   *
+   * By section, all three keep PLANT HR DASHBOARD lit, and the LEGAL NOTICE
+   * entry lights only for its own /legal-notice workspace.
+   */
+  const here = sectionOf(pathname);
 
   async function handleLogout() {
     const result = await Swal.fire({
@@ -164,8 +199,8 @@ export default function Sidebar({ isOpen, onClose }) {
               key={item.id}
               to={item.to}
               onClick={() => { if (window.innerWidth < 1024) onClose(); }}
-              className={({ isActive }) =>
-                `sidebar-link flex items-center transition-all duration-300 ${isOpen ? 'gap-3 px-4' : '!justify-center !px-0'} ${isActive ? 'active' : ''}`
+              className={() =>
+                `sidebar-link flex items-center transition-all duration-300 ${isOpen ? 'gap-3 px-4' : '!justify-center !px-0'} ${here === sectionOf(item.to) ? 'active' : ''}`
               }
             >
               <i className={`${item.icon} w-4 text-center flex-shrink-0 text-sm`} />

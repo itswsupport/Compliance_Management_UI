@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import DataTable from '../ui/DataTable';
 import StatusBadge from '../ui/StatusBadge';
@@ -8,14 +8,19 @@ import SearchableSelect from '../ui/SearchableSelect';
 import DashboardNavCards, { clearCardCache, clearSectionCache, setCachedRows, cachedEntries } from '../ui/DashboardNavCards';
 import ComplianceView from '../../pages/compAdmin/ComplianceView';
 import { deleteCompliance } from '../../services/complianceService';
+import { getLegalNoticeList } from '../../services/legalNoticeService';
+import { isApproved } from '../../utils/legalNoticeRows';
 import { useAuth } from '../../context/AuthContext';
 import { getDueDate } from '../../utils/formatters';
-import { LS_KEYS } from '../../utils/constants';
+import { LS_KEYS, STATUS } from '../../utils/constants';
 import { COUNT_STATUS_BY_PATH } from '../../utils/dashboardCounts';
-import { fetchComplianceRows, visibleRows, filterByPeriod, yearsIn } from '../../utils/complianceRows';
-import { enteredSection, sectionOf } from '../../utils/navSection';
+import { fetchComplianceRows, visibleRows, filterByPeriod, yearsIn, effectiveStatus } from '../../utils/complianceRows';
+import { enteredSection, sectionOf, arrivedFromAnotherScreen } from '../../utils/navSection';
 import { recordOpened } from '../../utils/recordOpened';
 import { getPeriod, setPeriod as setSharedPeriod, resetPeriod } from '../../utils/periodFilter';
+
+/** Marks a calendar entry as a legal notice; see handleCalendarSelect. */
+const LEGAL_ID_PREFIX = 'LN-';
 
 const MONTHS = [
   'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
@@ -62,10 +67,41 @@ export default function ComplianceListPage({
   showDelete = false,
   showCalendar = false,
   calendarDefaultOpen = false,
+  /**
+   * Statuses the CALENDAR draws, when they differ from the list's.
+   *
+   * The Overdue tab lists status 5 alone, which is exactly right for a list of
+   * overdue work — and stays that way. But the calendar's job is to show a
+   * deadline COMING, and a compliance due on Friday is not overdue yet, so it
+   * never reached the calendar at all. Given its own set the calendar can warn
+   * ahead of a due date while the list beneath it keeps its precise meaning.
+   *
+   * Null on every other tab, where the calendar simply reuses the list's rows
+   * and costs nothing extra.
+   */
+  calendarStatusArray = null,
+  /**
+   * Several status sets for the calendar, fetched and merged into one month.
+   *
+   * The Plant HR list endpoint works out its mstStatus FROM the status array it
+   * is given - a set containing 5 means "overdue", anything else means
+   * "outstanding" - so a single call can return one or the other but never
+   * both. A calendar wants both: what is late AND what is coming.
+   *
+   * Ignored when null, which is every screen that passes calendarStatusArray.
+   */
+  calendarStatusArrays = null,
+  /** Draw this employee's legal notices in the calendar beside the compliances. */
+  calendarLegalNotices = false,
   viewShowAction = true,
   storageKey = LS_KEYS.ID,
 }) {
   const [data, setData]       = useState([]);
+  // Only filled when calendarStatusArray is given; otherwise the calendar reads
+  // the very rows the list does.
+  const [calendarData, setCalendarData] = useState([]);
+  // Legal notices reshaped as calendar entries - see loadLegalForCalendar.
+  const [legalCalendarData, setLegalCalendarData] = useState([]);
   const [loading, setLoading] = useState(true);
   // Compliance detail opens inside this card instead of on its own route —
   // non-null id means the view has replaced the list.
@@ -84,7 +120,13 @@ export default function ComplianceListPage({
   }
   // Router pathname, not window.location — the latter carries the "/compliance"
   // basename, which the nav card `to` values do not.
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  // ?open=<id> - how another screen asks this one to open a record. The Legal
+  // Notice calendar draws compliances too, and a pick there lands here.
+  const openParam = new URLSearchParams(search).get('open');
+  // ...and whether the click came off a calendar, so the back button can say so.
+  const fromCalendar = new URLSearchParams(search).get('from') === 'calendar';
+  const navigate = useNavigate();
 
   const { user } = useAuth();
 
@@ -102,19 +144,77 @@ export default function ComplianceListPage({
 
   useEffect(() => { load(); }, [load]);
 
+  /**
+   * The calendar's own rows.
+   *
+   * A second query, and deliberately separate from the list's: widening
+   * statusArray would have filled the Overdue LIST with compliances that are not
+   * overdue, which is the one thing that list must never say.
+   */
+  const loadCalendar = useCallback(async () => {
+    const sets = calendarStatusArrays || (calendarStatusArray ? [calendarStatusArray] : null);
+    if (!user || !showCalendar || !sets) return;
+    try {
+      const lists = await Promise.all(sets.map((set) => fetchComplianceRows(user, set)));
+      // One record can satisfy two sets - an outstanding compliance that is also
+      // past due - and must still be one dot on one day.
+      const byId = new Map();
+      lists.flat().forEach((row) => { if (row && !byId.has(row.id)) byId.set(row.id, row); });
+      setCalendarData([...byId.values()]);
+    } catch {
+      // Leave whatever it has. The list beside it is unaffected either way.
+    }
+  }, [user, showCalendar, calendarStatusArray, calendarStatusArrays]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { loadCalendar(); }, [loadCalendar]);
+
+  /**
+   * Legal notices, reshaped into what ComplianceCalendar already reads.
+   *
+   * The calendar asks a row for getDueDate(), compActType and compSrNo, so a
+   * notice is mapped onto those three rather than teaching the calendar a second
+   * shape. The id is prefixed because the calendar hands back only an id on
+   * click, and the two flows open different screens.
+   */
+  const loadLegalForCalendar = useCallback(async () => {
+    if (!user || !showCalendar || !calendarLegalNotices) return;
+    try {
+      const res = await getLegalNoticeList(user.empCode);
+      // Approved notices are left out for the same reason the compliance status
+      // sets omit 1: a finished record has no deadline left to warn about.
+      setLegalCalendarData((res.data?.response || []).filter((n) => !isApproved(n)).map((n) => ({
+        id: `${LEGAL_ID_PREFIX}${n.id}`,
+        compSrNo: n.noticeNo,
+        compActType: n.noticeCategory,
+        firstDueDate: n.dueDate,
+        compFrequency: '',
+      isLegalNotice: true,
+      })));
+    } catch {
+      // The compliances beside them are unaffected either way.
+    }
+  }, [user, showCalendar, calendarLegalNotices]);
+
+  useEffect(() => { loadLegalForCalendar(); }, [loadLegalForCalendar]);
+
   // The tab we are on republishes its own rows — free, and it means the count
   // another page shows for this tab is as fresh as the last time the user
   // actually looked at it. Unfiltered: the filter is applied where it is read,
   // so changing it never needs another fetch.
   useEffect(() => {
     if (loading || !user || !COUNT_STATUS_BY_PATH[pathname]) return;
-    setCachedRows(pathname, visibleRows(data, pathname.includes('/pending'), user.empCode));
+    setCachedRows(pathname, visibleRows(data, pathname.includes('/pending'), user.empCode, pathname));
   }, [data, loading, pathname, user]);
 
   // Where the user came from. Runs before paint; enteredSection mutates the
   // recorded section, so it must be called once per navigation — hence one effect.
   useLayoutEffect(() => {
     const arrived = enteredSection(pathname);
+    // Whether the user came from ANY other screen, the notices and legal
+    // notices included. `arrived` above ignores those on purpose — it guards the
+    // period filter — so the calendar needs its own answer or a trip to Legal
+    // Notice leaves it shut on the way back.
+    const arrivedFromElsewhere = arrivedFromAnotherScreen(pathname);
     const owner = `${user?.empCode ?? ''}|${sectionOf(pathname)}`;
     const ownerChanged = owner !== periodOwner;
     periodOwner = owner;
@@ -139,7 +239,7 @@ export default function ComplianceListPage({
     }
 
     // Arriving from elsewhere leads with the calendar; own tabs show the list.
-    if (showCalendar && calendarDefaultOpen && arrived) {
+    if (showCalendar && calendarDefaultOpen && arrivedFromElsewhere) {
       setCalendarOpen(true);
     }
   }, [pathname, showCalendar, calendarDefaultOpen, user]);
@@ -147,6 +247,25 @@ export default function ComplianceListPage({
   // calendarOpen is deliberately left alone: the detail card outranks it while
   // viewId is set, so closing the detail drops the user back wherever they came
   // from — the calendar if that is what they picked the compliance off.
+  /**
+   * A pick off the calendar. Compliances open in place as they always have; a
+   * legal notice is a different record on a different screen, so it navigates
+   * there and lets that screen open it by id.
+   */
+  function handleCalendarSelect(id) {
+    const key = String(id);
+    if (key.startsWith(LEGAL_ID_PREFIX)) {
+      // The reader's own route, "/<dashboard>/legal-notice", not the sidebar's
+      // "/legal-notice/list". Only a Plant HR and a Comp Admin work there, and
+      // neither of them has legal notices on this calendar - everyone who can
+      // click one here reads them from their own dashboard, and that route is
+      // what keeps the screen read-only and the heading theirs.
+      navigate(`/${sectionOf(pathname)}/legal-notice?open=${key.slice(LEGAL_ID_PREFIX.length)}&from=calendar`);
+      return;
+    }
+    handleView(id);
+  }
+
   function handleView(id) {
     localStorage.setItem(storageKey, id);
     setViewId(id);
@@ -159,8 +278,33 @@ export default function ComplianceListPage({
   // Back out of the detail. Only an action that actually saved something can
   // have moved a record between tabs, so a plain "back" after reading a record
   // keeps the list on screen instead of re-running its query.
+  /**
+   * Open whatever ?open= names.
+   *
+   * Through handleView, so the record is registered with the bell and written to
+   * storageKey exactly as a click on the list would - ComplianceView reads the id
+   * from there, so setting viewId alone would show an empty card.
+   */
+  useEffect(() => {
+    // from=calendar with no record named: somebody asked for the month view
+    // itself - the Compliance Calendar button on the Legal Notice screen.
+    if (!openParam) {
+      if (fromCalendar) setCalendarOpen(true);
+      return;
+    }
+    // Open the calendar behind the detail, exactly as picking a record off this
+    // screen's own calendar leaves it standing. The detail covers it; closing
+    // reveals it, and the header reads BACK TO CALENDAR meanwhile.
+    if (fromCalendar) setCalendarOpen(true);
+    handleView(Number(openParam));
+  }, [openParam]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleCloseView(changed = false) {
     setViewId(null);
+    // Drop the parameter, or the effect above reopens the record the moment
+    // anything re-renders - and a second arrival at the same id would be
+    // ignored, because the value never changed.
+    if (openParam) navigate(pathname, { replace: true });
     if (!changed) return;
     clearCardCache();
     load();
@@ -221,7 +365,7 @@ export default function ComplianceListPage({
 
   // Everything downstream — table, calendar and this page's own card count —
   // reads `rows`, so the filter is applied once, here.
-  const allRows = visibleRows(data, tab === 'pending', user?.empCode);
+  const allRows = visibleRows(data, tab === 'pending', user?.empCode, pathname);
   // Newest first (highest id). Copied before sorting — sort() mutates in place.
   const rows = [...filterByPeriod(allRows, year, month)]
     .sort((a, b) => Number(b.id) - Number(a.id));
@@ -298,10 +442,16 @@ export default function ComplianceListPage({
         }
         // No waiting row for me → show the record's ACTUAL status
         // (e.g. status 4 → "Re-Submitted", not "Approval Pending").
-        const s = LIST_STATUS[Number(row.status)];
+        //
+        // effectiveStatus, not row.status: a record the old server marked
+        // approved at the SECOND approval still reads 1 in the column while its
+        // level-3 action is open, and it is now listed as pending — labelling it
+        // "Approved" there would just move the contradiction.
+        const eff = effectiveStatus(row);
+        const s = LIST_STATUS[eff];
         return s
-          ? <StatusBadge status={row.status} labelOverride={s.label} variantOverride={s.variant} />
-          : <StatusBadge status={row.status} />;
+          ? <StatusBadge status={eff} labelOverride={s.label} variantOverride={s.variant} />
+          : <StatusBadge status={eff} />;
       },
     },
     ...(showDelete
@@ -319,6 +469,24 @@ export default function ComplianceListPage({
           ),
         }]
       : []),
+  ];
+
+  // What the calendar draws: its own rows when it was given a set of its own,
+  // else the list's. Narrowed by the period filter either way, so one selection
+  // still governs the whole dashboard.
+  // A calendar warns about a deadline, so a finished record has no place on it -
+  // the same rule the admin status sets state by omitting 1. The LIST gets this
+  // from visibleRows, which the calendar does not go through: the Plant HR
+  // endpoint hands approved rows back on its outstanding fetch (its mstStatus==0
+  // branch only excludes overdue), so without this an approved compliance was
+  // drawn as a dot with nothing left to do about it.
+  const calendarDue = (list) => list.filter((row) => effectiveStatus(row) !== STATUS.APPROVED);
+
+  const calendarRows = [
+    ...calendarDue((calendarStatusArray || calendarStatusArrays)
+      ? filterByPeriod(calendarData, year, month)
+      : rows),
+    ...filterByPeriod(legalCalendarData, year, month),
   ];
 
   const filtered = year !== '' || month !== '';
@@ -452,9 +620,9 @@ export default function ComplianceListPage({
           takes the slot, and "Back to List" then lands on the list. */}
       {showCalendar && calendarOpen && !viewId ? (
         <ComplianceCalendar
-          data={rows}
+          data={calendarRows}
           loading={loading}
-          onSelect={handleView}
+          onSelect={handleCalendarSelect}
           focusYear={year}
           focusMonth={month}
         />

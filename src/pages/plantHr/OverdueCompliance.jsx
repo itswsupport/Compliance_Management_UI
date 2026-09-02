@@ -12,6 +12,14 @@ export default function PlantHrOverdue() {
       listTitle="Overdue Compliance"
       headerColor="card-header-overdue"
       statusArray={[0, 5]}
+      calendarStatusArrays={[[0, 3, 4, 11, 2], [0, 5]]}
+      /* Only for a CHD. A Plant HR has Legal Notice in the sidebar and a
+         calendar of their own behind it, so drawing the notices here as well
+         would be the same month in two places. A CHD has no sidebar entry -
+         they reach legal notices by the card - so this is their only
+         calendar view of them. */
+      calendarLegalNotices={!user?.isPlantHr}
+      showCalendar={true}
       navCards={NAV_CARDS}
     />
   );

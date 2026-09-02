@@ -377,14 +377,20 @@ table.ui-t.wide td{padding:5px 2px}
   section{break-inside:auto; break-before:page; border:none; box-shadow:none; padding:0 0 6mm 5mm; margin:0}
   section:first-of-type{break-before:avoid}
   .cover{break-after:page; box-shadow:none}
-  figure.fig, .note{break-inside:avoid}
+  /* The screenshot must never be sliced, but a long legend under it may
+     flow onto the next page — binding the two together makes a block no
+     page can hold, which is what left gaps and clipped figures. */
+  figure.fig{break-inside:auto}
+  figure.fig .stage, figure.fig svg, .note{break-inside:avoid}
+  figcaption{break-before:avoid}
   table.doc tr{break-inside:avoid}
   /* a heading must never be the last thing on a page */
-  section > h2, section > .lead, h3.sub, figcaption{break-after:avoid}
+  section > h2, section > .lead, h3.sub{break-after:avoid}
   ol.legend li{break-inside:avoid}
-  /* A4 landscape less an 11mm margin each side is ~1039 CSS px of paper for a
-     1180px canvas. Fixed, and !important, because the on-screen value is inline. */
-  .shot{box-shadow:none; zoom:0.86 !important}
+  /* A4 landscape less an 11mm margin each side is ~1039 x 711 CSS px of paper
+     for a 1180px canvas. build() writes --pz per figure so a tall one is scaled
+     to the page height too; !important because the on-screen zoom is inline. */
+  .shot{box-shadow:none; zoom:var(--pz, 0.86) !important}
   p, section > .lead, ul.tight li{max-width:none}
   a{color:inherit; text-decoration:none}
 }
@@ -466,10 +472,15 @@ table.ui-t.wide td{padding:5px 2px}
         <span class="d">I publish an announcement, or I read one that was sent to me.</span>
         <span class="go">Section 12 <i class="fas fa-arrow-right"></i></span>
       </a>
-      <a class="rolecard" href="#s15">
+      <a class="rolecard" href="#s13">
+        <span class="r"><i class="fas fa-gavel"></i>Legal notices</span>
+        <span class="d">I raise a legal notice for my plant and close it, or I approve one.</span>
+        <span class="go">Section 13 <i class="fas fa-arrow-right"></i></span>
+      </a>
+      <a class="rolecard" href="#s16">
         <span class="r"><i class="fas fa-life-ring"></i>Something is wrong</span>
         <span class="d">A message I do not understand, or a record I cannot find.</span>
-        <span class="go">Section 15 <i class="fas fa-arrow-right"></i></span>
+        <span class="go">Section 16 <i class="fas fa-arrow-right"></i></span>
       </a>
     </div>
   </div>
@@ -503,11 +514,13 @@ table.ui-t.wide td{padding:5px 2px}
         <span class="what">Read-only oversight of everything, and where each record is sitting.</span></li>
       <li><a href="#s12">Notices</a>
         <span class="what">Publishing a notice, who receives it, and reading one.</span></li>
-      <li><a href="#s13">Everyday tools</a>
+      <li><a href="#s13">Legal notices</a>
+        <span class="what">The one flow a Plant HR starts: raising, submitting and getting it approved.</span></li>
+      <li><a href="#s14">Everyday tools</a>
         <span class="what">The bell, the Time Period filter, search, export and the calendar.</span></li>
-      <li><a href="#s14">Status reference</a>
+      <li><a href="#s15">Status reference</a>
         <span class="what">What every badge means and who has to act next.</span></li>
-      <li><a href="#s15">If something goes wrong</a>
+      <li><a href="#s16">If something goes wrong</a>
         <span class="what">Common messages and problems, with the fix for each.</span></li>
     </ol>
   </div>
@@ -528,7 +541,7 @@ table.ui-t.wide td{padding:5px 2px}
       <tbody>
         <tr>
           <td><b>Comp Admin</b></td><td>COMPLIANCE ADMIN DASHBOARD</td>
-          <td>Raises every compliance request — assigns it to a plant with its category, frequency and due date — and tracks all of them afterwards. Also owns Admin Settings.</td>
+          <td>Raises every compliance request — assigns it to a plant with its category, frequency and due date — and tracks all of them afterwards. Also owns Admin Settings, and approves the <a href="#s13">legal notices</a> the plants raise.</td>
           <td>Assign · Pending · Approved · Overdue</td>
         </tr>
         <tr>
@@ -538,7 +551,7 @@ table.ui-t.wide td{padding:5px 2px}
         </tr>
         <tr>
           <td><b>Plant HR</b></td><td>PLANT HR DASHBOARD</td>
-          <td>The doer on <b>Flow 2</b>, at the plant. Which Plant HR receives a request follows the <b>plant code</b> it was assigned to.</td>
+          <td>The doer on <b>Flow 2</b>, at the plant. Which Plant HR receives a request follows the <b>plant code</b> it was assigned to. The only role that RAISES anything itself — see <a href="#s13">legal notices</a>.</td>
           <td>Pending · Approved · Overdue</td>
         </tr>
         <tr>
@@ -746,7 +759,7 @@ table.ui-t.wide td{padding:5px 2px}
         badge says so from your point of view (<span class="pill p-warn">Submission Pending</span>,
         <span class="pill p-warn">Pending</span>, <span class="pill p-warn">Final Approval Pending</span>);
         otherwise it shows the record's own state. The full list is in
-        <a href="#s14">section 14</a>.</li>
+        <a href="#s15">section 15</a>.</li>
     </ul>
 
     <div class="note">
@@ -789,9 +802,10 @@ table.ui-t.wide td{padding:5px 2px}
         (Flow&nbsp;1 — CHD submits, Comp&nbsp;Head approves) or the Plant&nbsp;HR route
         (Flow&nbsp;2 — the plant's Plant&nbsp;HR submits, Group&nbsp;HR&nbsp;Head approves).</li>
       <li><b>Frequency</b> — Yearly, Half-Yearly, Quarterly or Monthly.</li>
-      <li><b>Due Date</b> — click the box to open the calendar picker. Past dates cannot be chosen.
-        For an <code class="k">AS &amp; WHEN</code> compliance you get a <b>Start Date</b> and an
-        <b>End Date</b> instead of a single due date.</li>
+      <li><b>Due Date</b> — click the box, or the calendar icon at its right edge, to open the
+        picker. Past dates cannot be chosen. For an <code class="k">AS &amp; WHEN</code> compliance you
+        get a <b>Start Date</b> and an <b>End Date</b> instead of a single due date; all three boxes
+        carry the same icon.</li>
       <li><b>Attachment</b> <span class="req">*</span> — the compliance act or notification document.
         This is what the doer reads to know what is expected of them, so it is mandatory.</li>
       <li><b>Submit.</b> A confirmation appears and you are taken to the <b>Pending Compliance</b> tab
@@ -833,7 +847,7 @@ table.ui-t.wide td{padding:5px 2px}
             <td>Finished — approved all the way through HCM Head. Nothing further is required.</td></tr>
         <tr><td><b>Overdue Compliance</b></td>
             <td>Past its due date and still not closed. This tab opens with the
-                <b>Compliance Calendar</b> (see <a href="#s13">section 13</a>).</td></tr>
+                <b>Compliance Calendar</b> (see <a href="#s14">section 14</a>).</td></tr>
       </tbody>
     </table>
 
@@ -1040,17 +1054,19 @@ table.ui-t.wide td{padding:5px 2px}
       <li><b>Compliance Category</b> and <b>Compliance Subcategory</b> — the same two lists the
         compliance form uses. They say what the notice is about, and the subcategory becomes the
         notice's <b>Subject</b>.</li>
-      <li><b>Attachment</b> <span class="req">*</span> — the document itself: PDF, Excel, JPG or PNG,
-        up to 50 MB. File names may use letters, numbers, spaces and <code class="k">. - _ ( )</code>
-        only.</li>
+      <li><b>Attachment</b> — <b>optional on a notice</b>, unlike a compliance, where it is
+        required. Publish an announcement with nothing attached, or attach the document: PDF, Excel,
+        JPG or PNG, up to 50 MB. File names may use letters, numbers, spaces and
+        <code class="k">. - _ ( )</code> only.</li>
       <li><b>Notice Description</b> — optional. A short line of context, shown in the mail and on the
         board.</li>
       <li><b>Submit</b> — the notice is published immediately and the mails go out. There is no
         confirmation step, because there is nothing to approve.</li>
     </ol>
     <p>
-      There is no <b>Frequency</b> and no <b>Due Date</b> on a notice: it happens once. Everything else
-      on the form behaves exactly as it does for a compliance (see
+      There is no <b>Frequency</b> and no <b>Due Date</b> on a notice: it happens once, so it has no
+      deadline and never appears on the Compliance Calendar. The <b>Attachment</b> is optional here and
+      required there. Everything else on the form behaves exactly as it does for a compliance (see
       <a href="#s5">section 5</a>).
     </p>
 
@@ -1129,9 +1145,232 @@ table.ui-t.wide td{padding:5px 2px}
     </p>
   </section>
 
-  <!-- ══════════════════════ 13. TOOLS ══════════════════════ -->
+  <!-- ══════════════════════ 13. LEGAL NOTICES ══════════════════════ -->
   <section id="s13">
-    <h2><span class="num">13</span> Everyday tools</h2>
+    <h2><span class="num">13</span> Legal notices</h2>
+    <p class="lead">
+      A legal notice runs the opposite way to everything else in this manual. A compliance is handed
+      <i>down</i> — the Comp Admin assigns it and somebody below does the work. A legal notice is
+      handed <i>up</i>: the Plant HR raises it against their own plant, closes it out, and sends it to
+      the Comp Admin for approval. Nobody assigns it to them.
+    </p>
+
+    <div class="note">
+      <b>Three different things, easily confused</b>
+      A <b>compliance</b> is work assigned to somebody and approved in two stages. A <b>notice</b> is
+      an announcement with no flow at all. A <b>legal notice</b> is work the Plant HR raises
+      themselves and the Comp Admin signs off — one approver, not two, and no Comp Head or HCM Head
+      anywhere in it.
+    </div>
+
+    <figure class="fig">
+      <svg viewBox="0 0 1180 400" style="width:100%;height:auto;background:#fff;border:1px solid #dbe3ea;border-radius:4px">
+        <defs>
+          <marker id="lnah" markerWidth="9" markerHeight="9" refX="7.5" refY="3.2" orient="auto">
+            <path d="M0,0 L8,3.2 L0,6.4 z" fill="#3482AE"/>
+          </marker>
+          <marker id="lnahr" markerWidth="9" markerHeight="9" refX="7.5" refY="3.2" orient="auto">
+            <path d="M0,0 L8,3.2 L0,6.4 z" fill="#df4759"/>
+          </marker>
+        </defs>
+        <style>
+          .lnbx{rx:4; ry:4}
+          .lnt{font-family:'Exo',sans-serif; font-size:13px; fill:#fff; font-weight:600; text-anchor:middle}
+          .lnts{font-family:'Exo',sans-serif; font-size:11px; fill:#fff; text-anchor:middle; opacity:.92}
+          .lnm{font-family:'Exo',sans-serif; font-size:11px; fill:#5d7183; text-anchor:end}
+          .lnrj{font-family:'Exo',sans-serif; font-size:11px; fill:#df4759; font-weight:600; text-anchor:start}
+        </style>
+
+        <rect class="lnbx" x="420" y="18" width="340" height="54" fill="#17a2b8"/>
+        <text class="lnt" x="590" y="40">PLANT HR raises it</text>
+        <text class="lnts" x="590" y="58">own plant, category, due date, document</text>
+        <text class="lnm" x="404" y="48">mail + bell to the readers and the Comp Admin</text>
+        <line x1="590" y1="72" x2="590" y2="104" stroke="#3482AE" stroke-width="2" marker-end="url(#lnah)"/>
+
+        <rect class="lnbx" x="420" y="106" width="340" height="54" fill="#3482AE"/>
+        <text class="lnt" x="590" y="128">PLANT HR submits it</text>
+        <text class="lnts" x="590" y="146">date of submission + document + comment</text>
+        <text class="lnm" x="404" y="136">mail + bell to the Comp Admin</text>
+        <line x1="590" y1="160" x2="590" y2="192" stroke="#3482AE" stroke-width="2" marker-end="url(#lnah)"/>
+
+        <rect class="lnbx" x="420" y="194" width="340" height="54" fill="#3482AE"/>
+        <text class="lnt" x="590" y="216">COMP ADMIN decides</text>
+        <text class="lnts" x="590" y="234">approve or reject, with a comment</text>
+        <text class="lnm" x="404" y="224">mail + bell to the Plant HR</text>
+        <line x1="590" y1="248" x2="590" y2="286" stroke="#3482AE" stroke-width="2" marker-end="url(#lnah)"/>
+
+        <rect class="lnbx" x="430" y="288" width="320" height="48" fill="#42ba96"/>
+        <text class="lnt" x="590" y="308">APPROVED</text>
+        <text class="lnts" x="590" y="325">finished — closing date stamped</text>
+
+        <path d="M760,221 H905 V133 H768" fill="none" stroke="#df4759" stroke-width="2" marker-end="url(#lnahr)"/>
+        <text class="lnrj" x="915" y="172">rejected —</text>
+        <text class="lnrj" x="915" y="188">back to the Plant HR,</text>
+        <text class="lnrj" x="915" y="204">as many times as it takes</text>
+      </svg>
+      <figcaption><b>Fig. 15</b> — The legal notice flow. Raising and submitting are two separate
+        steps by the same person, and a rejection returns it to them rather than ending it.</figcaption>
+    </figure>
+
+    <h3 class="sub">Raising one — Plant HR</h3>
+    <p>
+      Open <b>Legal Notice</b> in the sidebar, then the <b>ADD LEGAL NOTICE</b> card.
+    </p>
+    <ol class="steps">
+      <li><b>Select Plant</b> <span class="req">*</span> — only the plants you are Plant HR of. If you
+        hold just one it is already filled in and cannot be changed.</li>
+      <li><b>Category</b> and <b>Subcategory</b> <span class="req">*</span> — the same two act lists
+        the compliance form uses. Together they become the notice's subject; you are not asked to
+        write one.</li>
+      <li><b>Due Date</b> <span class="req">*</span> — when it must be closed by. Dates before today
+        are greyed out and refused.</li>
+      <li><b>Attachment</b> <span class="req">*</span> — the notice document itself. PDF, Excel, JPG or
+        PNG, up to 50&nbsp;MB.</li>
+      <li><b>Legal Notice Description</b> — optional, and worth writing: it becomes the first remark in
+        the Action History.</li>
+      <li><b>Submit</b> — it is numbered <code class="k">LNTC/&lt;plant&gt;/MM/YY/nnn</code> and appears
+        on your Pending card, waiting for you.</li>
+    </ol>
+
+    <figure class="fig">
+      <div class="stage" data-fig="legal-add"></div>
+      <figcaption><b>Fig. 16</b> &mdash; Raising a legal notice. Only the Plant HR sees this form, and
+        only for the plants they hold.</figcaption>
+      <ol class="legend">
+        <li><b>Add Legal Notice</b> &mdash; the first card, and the only one the Comp Admin does not get.</li>
+        <li><b>Select Plant</b> &mdash; lists your plants and no others. Hold one and it is already filled
+          in and locked.</li>
+        <li><b>Category</b> and <b>Subcategory</b> &mdash; the same two act lists the compliance form
+          uses. Together they become the subject.</li>
+        <li><b>Due Date</b> &mdash; the calendar icon opens the picker. Yesterday and earlier are refused.</li>
+        <li><b>Attachment</b> &mdash; the notice document itself; PDF, Excel, JPG or PNG up to 50&nbsp;MB.</li>
+        <li><b>Description</b> &mdash; optional, and worth writing: it becomes the first remark in the
+          Action History.</li>
+        <li><b>Submit</b> &mdash; numbers it <code class="k">LNTC/&lt;plant&gt;/MM/YY/nnn</code> and puts
+          it on your own Pending card.</li>
+      </ol>
+    </figure>
+
+    <div class="note">
+      <b>Raising it is not submitting it</b>
+      A newly raised legal notice sits at <b>Submission Pending</b> — with <i>you</i>, not the admin.
+      Nothing reaches the Comp Admin until you open it and take action.
+    </div>
+
+    <h3 class="sub">Submitting it — Plant HR</h3>
+    <p>
+      Open the notice from the <b>LEGAL NOTICE NO</b> badge in the list. Card&nbsp;3,
+      <b>ACTION</b>, asks for three things: the <b>date of submission</b> (today by default), the
+      <b>document</b> proving it was dealt with, and a <b>comment</b>. Submitting moves it to
+      <b>Approval Pending</b> and mails the Comp Admin.
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="legal-submit"></div>
+      <figcaption><b>Fig. 17</b> &mdash; The same notice a moment later, opened by its number. Card&nbsp;3
+        is the submission the Plant HR still owes.</figcaption>
+      <ol class="legend">
+        <li><b>Legal Notice No</b> &mdash; clicking this badge in the list is what opens the notice, and
+          what clears its bell notification.</li>
+        <li>The <b>raising</b> step, already recorded: your name and the description you typed as its
+          remark. No file here &mdash; the notice document is the Attachment in card&nbsp;1.</li>
+        <li><b>Submission Pending</b> &mdash; the waiting row. It names whoever the notice is sitting
+          with, which at this point is still you.</li>
+        <li><b>Date of Submission</b> &mdash; today by default; change it if the reply went in earlier.</li>
+        <li><b>Upload Attachment</b> &mdash; proof it was dealt with. Each submission keeps its own file,
+          so a re-submission never overwrites the first.</li>
+        <li><b>Comment</b> &mdash; required. It is what the Comp Admin reads before deciding.</li>
+        <li><b>Submit</b> &mdash; moves the notice to <b>Approval Pending</b> and mails the Comp Admin.</li>
+      </ol>
+    </figure>
+
+    <h3 class="sub">Approving it — Comp Admin</h3>
+    <p>
+      The admin opens the same screen and gets <b>APPROVE</b> or <b>REJECT</b> with a comment.
+      Approving closes the notice and stamps a closing date. Rejecting sends it back to the Plant HR as
+      <b>Submission Pending</b> again — the notice is not finished, and the loop can run as many times
+      as needed. Each submission keeps its own document, so a re-submission never overwrites the first.
+    </p>
+
+    <figure class="fig">
+      <div class="stage" data-fig="legal-approve"></div>
+      <figcaption><b>Fig. 18</b> &mdash; The Comp Admin&rsquo;s view of the same notice. Same three cards,
+        but card&nbsp;3 now asks for a decision instead of a submission.</figcaption>
+      <ol class="legend">
+        <li><b>Rejected</b> &mdash; a card only the admin has. A notice they send back leaves their
+          Pending and appears here.</li>
+        <li>The Plant HR&rsquo;s <b>submission</b>, with the file they attached. Download it before you
+          decide.</li>
+        <li><b>Approval Pending</b> &mdash; the waiting row, now naming the admin.</li>
+        <li><b>Approve</b> or <b>Reject</b>. Approving stamps a closing date and finishes the notice;
+          rejecting sends it back to the Plant HR as <b>Submission Pending</b>.</li>
+        <li><b>Comment</b> &mdash; required either way, and doubly so on a rejection: it is the only
+          thing telling the Plant HR what to fix.</li>
+        <li><b>Submit</b> &mdash; mails the Plant HR of that plant, and nobody else.</li>
+      </ol>
+    </figure>
+
+    <h3 class="sub">Who can do what</h3>
+    <table class="doc">
+      <tr><th>Role</th><th>Can do</th><th>Sees</th><th>Reached from</th></tr>
+      <tr><td><b>Plant HR</b></td><td>raise, submit, re-submit</td><td>their own plants</td>
+        <td>sidebar, or the card on their dashboard</td></tr>
+      <tr><td><b>Comp Admin</b></td><td>approve, reject</td><td>every legal notice</td>
+        <td>sidebar</td></tr>
+      <tr><td><b>Comp Head</b>, <b>HCM Head</b>, <b>Authority</b>, <b>CHD</b></td>
+        <td>view only</td><td>every legal notice</td>
+        <td>the <b>LEGAL NOTICE</b> card on their dashboard</td></tr>
+      <tr><td><b>Group HR Head</b> (Corp HR)</td><td>view only</td>
+        <td>the plants they are mapped to</td>
+        <td>the <b>LEGAL NOTICE</b> card on their dashboard</td></tr>
+    </table>
+    <p>
+      Only the two roles that <i>act</i> get the sidebar entry. Everybody else reaches legal notices
+      the way they reach notices — from a card on the dashboard they are already standing on, and that
+      screen is read-only however many roles they hold.
+    </p>
+
+    <h3 class="sub">Mail and the bell</h3>
+    <table class="doc">
+      <tr><th>When</th><th>Who is told</th></tr>
+      <tr><td>a Plant HR <b>raises</b> one</td>
+        <td>Comp Head, HCM Head, Authority, CHD, the Comp Admin, and the Group HR Head of that
+          plant — <b>once</b>, and never again for that notice</td></tr>
+      <tr><td>the Plant HR <b>submits</b> or re-submits</td><td>the Comp Admin</td></tr>
+      <tr><td>the Comp Admin <b>approves</b> or <b>rejects</b></td><td>the Plant HR of that plant</td></tr>
+    </table>
+    <p>
+      No mail on this flow is ever copied to anyone: there is no CC. The view-only roles hear about a
+      legal notice exactly once, when it is raised — they can watch its progress on the dashboard, but
+      they are not told again as it moves.
+    </p>
+    <p>
+      A bell notification opens the notice itself, and clicking one clears only that notice's entries.
+      Unlike the Notice Dashboard, arriving at the legal notice list does not mark everything read —
+      each notice is opened on its own.
+    </p>
+
+    <h3 class="sub">The cards</h3>
+    <ul class="tight">
+      <li><b>Plant HR</b> — <b>Add Legal Notice</b>, <b>Pending</b>, <b>Approved</b>, <b>Overdue</b>.</li>
+      <li><b>Comp Admin</b> — <b>Pending</b>, <b>Approved</b>, <b>Overdue</b>, <b>Rejected</b>. There is
+        no Add card: the admin approves legal notices, they do not raise them.</li>
+      <li><b>Pending</b> is everything unfinished. <b>Overdue</b> is a notice whose due date has passed
+        and which is not yet approved — the day after the due date, not on it.</li>
+      <li>Rejected notices leave the admin's Pending, because the notice is back with the Plant HR. For
+        the Plant HR they stay in Pending, because it is work they still owe.</li>
+    </ul>
+
+    <div class="note warn">
+      <b>A legal notice is never deleted</b>
+      There is no withdraw button. Once raised it stays on the record with its full Action History,
+      whether it ends approved or is still going round the rejection loop.
+    </div>
+  </section>
+
+  <!-- ══════════════════════ 14. TOOLS ══════════════════════ -->
+  <section id="s14">
+    <h2><span class="num">14</span> Everyday tools</h2>
     <p class="lead">
       These work the same way on every dashboard, whichever role you hold.
     </p>
@@ -1139,7 +1378,7 @@ table.ui-t.wide td{padding:5px 2px}
     <h3 class="sub">The notification bell</h3>
     <figure class="fig">
       <div class="stage" data-fig="bell"></div>
-      <figcaption><b>Fig. 15</b> — The bell lists only compliances that need something from you, plus
+      <figcaption><b>Fig. 19</b> — The bell lists only compliances that need something from you, plus
         the outcome of requests you raised. Clicking a line opens that compliance.</figcaption>
     </figure>
     <ul class="tight">
@@ -1170,38 +1409,54 @@ table.ui-t.wide td{padding:5px 2px}
     <h3 class="sub">The Compliance Calendar</h3>
     <figure class="fig">
       <div class="stage" data-fig="calendar"></div>
-      <figcaption><b>Fig. 16</b> — The calendar on the Comp Admin Overdue tab: compliances laid out on
+      <figcaption><b>Fig. 20</b> — The calendar on the Comp Admin Overdue tab: compliances laid out on
         their due dates. Click any entry to open that compliance.</figcaption>
     </figure>
     <p>
-      The calendar is a month view of the records the Overdue tab is showing, laid out on their due
-      dates, so a cluster of deadlines is obvious at a glance. Each entry is a coloured dot and its
-      compliance category; a day with more than a few shows <i>+n MORE</i>.
+      The calendar is a month view of outstanding compliances, laid out on their due dates, so a
+      cluster of deadlines is obvious at a glance. Each entry is a coloured dot and its compliance
+      category; a day with more than a few shows <i>+n MORE</i>.
+    </p>
+
+    <div class="note">
+      <b>The calendar is not the tab you opened it from.</b>
+      It draws every compliance still outstanding — pending, submitted, re-submitted, approval
+      pending, rejected and overdue — whichever tab you toggle it on. That is deliberate: a calendar
+      of overdue work only ever tells you what you have already missed, and the point of a month view
+      is to see a deadline <i>before</i> it slips. Approved compliances are the one thing left out;
+      they are finished, and have no deadline left to warn about.
+    </div>
+
+    <p>
+      It is reached from the <b>COMPLIANCE CALENDAR</b> button at the top right of all four Comp Admin
+      screens — <b>Assign Compliance / Notice</b>, <b>Pending</b>, <b>Approved</b> and
+      <b>Overdue</b> — and shows the same month wherever you open it.
     </p>
 
     <ol class="steps">
-      <li><b>It opens by itself.</b> Signing in as <b>Comp Admin</b> lands you on
+      <li><b>It opens by itself on Overdue.</b> Signing in as <b>Comp Admin</b> lands you on
         <b>Overdue Compliance</b> with the calendar already open, rather than the list. The same
         happens to anyone who <i>also</i> holds Comp Admin alongside another role — Comp Admin decides
-        where they land — and each time you come back to the Comp Admin dashboard from elsewhere.</li>
+        where they land — and each time you come back to the Comp Admin dashboard from elsewhere. On
+        the other three screens the button is there but the list leads.</li>
       <li><b>Click a compliance in the calendar</b> to open it. The <b>Compliance View</b> replaces the
         calendar in place, exactly as it does when you open a record from a list.</li>
       <li><b>BACK TO CALENDAR</b> returns you to the month view you came from — the button in the card
         header knows you arrived from the calendar and says so, instead of <b>BACK TO LIST</b>.</li>
-      <li><b>The COMPLIANCE CALENDAR button</b> at the top right switches between the calendar and the
-        table whenever you want; moving to another tab shows that tab's list as normal.</li>
+      <li><b>The COMPLIANCE CALENDAR button</b> switches between the calendar and the table whenever
+        you want; moving to another tab shows that tab's list as normal.</li>
     </ol>
 
     <div class="note">
-      <b>The calendar shows the same records as the tab under it.</b>
-      The Time Period filter reaches it too, so narrowing to a year or month narrows the calendar with
-      everything else.
+      <b>The Time Period filter reaches the calendar too.</b>
+      Narrowing to a year or month narrows the calendar along with everything else, so one selection
+      still governs the whole dashboard.
     </div>
   </section>
 
-  <!-- ══════════════════════ 13. STATUS REFERENCE ══════════════════════ -->
-  <section id="s14">
-    <h2><span class="num">14</span> Status reference</h2>
+  <!-- ══════════════════════ 15. STATUS REFERENCE ══════════════════════ -->
+  <section id="s15">
+    <h2><span class="num">15</span> Status reference</h2>
     <p class="lead">
       The badge in the Status column answers "where is this compliance?". When a record is waiting on
       <i>you</i>, the badge is written from your point of view.
@@ -1240,9 +1495,9 @@ table.ui-t.wide td{padding:5px 2px}
     </div>
   </section>
 
-  <!-- ══════════════════════ 14. TROUBLESHOOTING ══════════════════════ -->
-  <section id="s15">
-    <h2><span class="num">15</span> If something goes wrong</h2>
+  <!-- ══════════════════════ 16. TROUBLESHOOTING ══════════════════════ -->
+  <section id="s16">
+    <h2><span class="num">16</span> If something goes wrong</h2>
 
     <table class="doc">
       <thead><tr><th style="width:34%">What you see</th><th>What it means and what to do</th></tr></thead>
@@ -1729,7 +1984,7 @@ table.ui-t.wide td{padding:5px 2px}
           '<div class="ui-f js-f2"><label>Select Plant <span class="req">*</span></label><div class="ui-in">ALL PLANTS <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
           '<div class="ui-f js-f3"><label>Compliance Category</label><div class="ui-in">POLLUTION CONTROL BOARD <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
           '<div class="ui-f js-f4"><label>Compliance Subcategory</label><div class="ui-in">PCB CONSENT TO OPERATE <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
-          '<div class="ui-f js-f5"><label>Attachment <span style="color:#FF0000;font-weight:400">(Compliance Act/Notification Document.)</span> <span class="req">*</span></label>' +
+          '<div class="ui-f js-f5"><label>Attachment <span style="color:#FF0000;font-weight:400">(Compliance Act/Notification Document.)</span> <span style="color:#9aa6b1;font-weight:400">(optional)</span></label>' +
             '<div class="ui-in"><span><span style="border:1px solid #b9c2ca;background:#eef1f4;padding:1px 6px;border-radius:2px">Choose File</span> &nbsp;PCB_CONSENT_2026.pdf</span></div></div>' +
           '<div class="ui-f js-f6"><label>Notice Description <span style="color:#9aa6b1;font-weight:400">(optional)</span></label>' +
             '<div class="ui-in" style="height:52px;align-items:flex-start;padding-top:5px">Renewal filed, copy attached for your records.</div></div>' +
@@ -1837,6 +2092,173 @@ table.ui-t.wide td{padding:5px 2px}
     { sel: '.js-calbtn', at: 'side', y: 248, w: 208, text: 'Toggles between the calendar and the list.' },
     { sel: '.js-ev', at: 'band', bx: 0.62, w: 330,
       text: 'Click a compliance here to open it. The header button then reads <b>BACK TO CALENDAR</b>.' }
+  ] };
+
+
+  /* ── legal notice figures ──────────────────────────────────────────────
+     A legal notice detail card is not a compliance one: no Compliance Sr. No.,
+     no Frequency, and one approver rather than two. detail() above is shaped
+     for a compliance, so the legal screens get their own builder instead of a
+     pile of flags on that one. Everything else — the outer card with BACK TO
+     LIST, the blue inner headers — is shared with Compliance View, because
+     LegalNoticeView.jsx mirrors ComplianceView slot for slot. */
+  function legalDetail(o) {
+    var f = function (lbl, val, span, extra) {
+      return '<div class="ui-f ' + (extra || '') + '" style="grid-column:span ' + span + '"><label>' + lbl + '</label>' +
+        '<div class="ui-in ro">' + val + '</div></div>';
+    };
+    var details =
+      '<div class="ui-cardbox" style="margin-bottom:11px"><div class="ui-h h-primary"><span><i class="fas fa-tasks"></i>1.Legal Notice Details</span></div>' +
+        '<div class="ui-cardbody"><div class="ui-grid js-det" style="grid-template-columns:repeat(12,1fr)">' +
+          f('Legal Notice No:', o.no, 2, 'js-no') + f('Plant Code:', o.pc, 2) +
+          f('Legal Notice Category:', o.cat, 4) + f('Legal Notice Subcategory:', o.sub, 4) +
+          f('Due Date:', o.due, 4, 'js-due') +
+          '<div class="ui-f js-att" style="grid-column:span 4"><label>Attachment :</label>' +
+            '<div class="ui-in ro"><span><i class="fas fa-download" style="color:#374151"></i> &nbsp;' + o.file + '</span></div></div>' +
+        '</div></div></div>';
+
+    var hist =
+      '<div class="ui-cardbox" style="margin-bottom:11px"><div class="ui-h h-primary"><span><i class="fas fa-tasks"></i>2.Action History</span></div>' +
+        '<div class="ui-cardbody js-hist"><table class="ui-t"><thead><tr>' +
+          ['No', 'Name of Authority', 'Date &amp; Time', 'Attachment', 'Remark', 'Action']
+            .map(function (c) { return '<th>' + c + '</th>'; }).join('') +
+        '</tr></thead><tbody>' + o.history.map(function (h, i) {
+          return '<tr class="js-h' + (i + 1) + '"><td>' + (i + 1) + '</td><td>' + h[0] + '</td><td>' + h[1] + '</td><td>' + h[2] +
+                 '</td><td style="white-space:normal;max-width:250px">' + h[3] + '</td><td>' + h[4] + '</td></tr>';
+        }).join('') + '</tbody></table></div></div>';
+
+    return details + hist + (o.action || '');
+  }
+
+  /* 3.ACTION — the Plant HR closing their own legal notice */
+  function legalActionSubmit() {
+    return '<div class="ui-cardbox js-act"><div class="ui-h h-primary"><span><i class="fas fa-tasks"></i>3.Action</span></div>' +
+      '<div class="ui-cardbody"><div class="ui-grid" style="grid-template-columns:repeat(3,1fr)">' +
+        '<div class="ui-f js-date"><label>Date of Submission</label><div class="ui-in">2026-08-24 <i class="far fa-calendar-alt" style="color:#3482AE"></i></div></div>' +
+        '<div class="ui-f js-up"><label>Upload Attachment</label><div class="ui-in"><span style="color:#374151">' +
+          '<span style="border:1px solid #b9c2ca;background:#eef1f4;padding:1px 6px;border-radius:2px">Choose File</span> &nbsp;REPLY_LABOUR_DEPT.pdf</span></div></div>' +
+        '<div class="ui-f js-cmt"><label>Comment</label><div class="ui-ta">Reply filed with the Labour Dept on 24 Aug, acknowledgement attached.</div></div>' +
+      '</div>' +
+      '<div class="ui-foot js-foot" style="margin:10px -14px -12px"><span class="ui-btn">Submit</span><span class="ui-btn red">Cancel</span></div>' +
+      '</div></div>';
+  }
+
+  /* 3.ACTION — the Comp Admin deciding. Same card as the compliance approver
+     gets, minus the second approval that never comes. */
+  function legalActionApprove() {
+    return '<div class="ui-cardbox js-act"><div class="ui-h h-primary"><span><i class="fas fa-tasks"></i>3.Action</span></div>' +
+      '<div class="ui-cardbody">' +
+        '<div class="js-radio" style="display:flex;align-items:center;gap:16px;font-size:10.5px;margin-bottom:10px">' +
+          '<span style="color:#3482AE;font-weight:700;text-transform:uppercase">Action :</span>' +
+          '<span style="color:#16a34a;font-weight:700;text-transform:uppercase"><input type="radio" checked disabled> Approve</span>' +
+          '<span style="color:#dc2626;font-weight:700;text-transform:uppercase"><input type="radio" disabled> Reject</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:14px;align-items:flex-start">' +
+          '<span style="color:#3482AE;font-weight:700;font-size:10px;text-transform:uppercase;padding-top:6px;white-space:nowrap">Comment <span style="color:#df4759">*</span> :</span>' +
+          '<div style="flex:1"><div class="ui-ta js-cmt" style="height:56px">Acknowledgement checked against the departmental copy. Approved.</div></div>' +
+        '</div>' +
+        '<div class="ui-foot js-foot" style="margin:11px -14px -12px"><span class="ui-btn">Submit</span><span class="ui-btn red">Cancel</span></div>' +
+      '</div></div>';
+  }
+
+  var LN_LINKS = [['fa-tachometer-alt', 'Plant Hr Dashboard'], ['fa-gavel', 'Legal Notice', true]];
+  function lnCards() {
+    return cards([
+      { icon: 'fas fa-plus', label: 'Add Legal Notice', cls: 'c-info' },
+      { v: '2', label: 'Pending',  cls: 'c-pending' },
+      { v: '5', label: 'Approved', cls: 'c-green' },
+      { v: '1', label: 'Overdue',  cls: 'c-draft' }
+    ]);
+  }
+
+  /* the raised notice, as it stands in the Action History before any action */
+  /* The raising row carries no file of its own: the notice document lives on
+     the master record, which is the Attachment in card 1. action_attachment is
+     only ever written by a submission, so this cell reads '-' in the app. */
+  var LN_RAISED = ['VIJAY SHELKE', '2026-08-21 10:14 AM', '-',
+    'Show cause on the overtime register, reply due 10 Sep.', bd('Legal Notice Raised', 'b-pri')];
+  var LN_SUBMITTED = ['VIJAY SHELKE', '2026-08-24 04:32 PM',
+    '<span style="color:#3482AE">REPLY_LABOUR_DEPT.pdf <i class="fas fa-download"></i></span>',
+    'Reply filed with the Labour Dept on 24 Aug, acknowledgement attached.', bd('Submitted', 'b-info')];
+
+  /* raising one */
+  FIGS['legal-add'] = { h: 500, html: shell({
+    name: 'VIJAY SHELKE', role: 'PLANT HR', bell: 2, title: 'LEGAL NOTICE DASHBOARD', filter: false,
+    links: LN_LINKS, cards: lnCards(),
+    body: listCard({
+      cls: 'h-info', title: 'Add Legal Notice', raw:
+        '<div class="ui-cardbody"><div class="ui-grid" style="grid-template-columns:repeat(3,1fr);gap:34px 18px;margin-bottom:30px">' +
+          '<div class="ui-f js-f1"><label>Select Plant <span class="req">*</span></label><div class="ui-in" style="border-color:#3482AE">RUCHA ENGINEERS &mdash; 1003 <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f2"><label>Category <span class="req">*</span></label><div class="ui-in">FACTORIES ACT <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f3"><label>Subcategory <span class="req">*</span></label><div class="ui-in">SHOW CAUSE NOTICE <i class="fas fa-chevron-down" style="color:#6b7280;font-size:8px"></i></div></div>' +
+          '<div class="ui-f js-f4"><label>Due Date <span class="req">*</span></label><div class="ui-in">2026-09-10 <i class="far fa-calendar-alt" style="color:#3482AE"></i></div></div>' +
+          '<div class="ui-f js-f5"><label>Attachment <span style="color:#FF0000;font-weight:400">(Legal Notice Document.)</span> <span class="req">*</span></label>' +
+            '<div class="ui-in"><span><span style="border:1px solid #b9c2ca;background:#eef1f4;padding:1px 6px;border-radius:2px">Choose File</span> &nbsp;SHOW_CAUSE_1003.pdf</span></div></div>' +
+          '<div class="ui-f js-f6"><label>Legal Notice Description <span style="color:#9aa6b1;font-weight:400">(optional)</span></label>' +
+            '<div class="ui-ta" style="height:40px">Show cause on the overtime register, reply due 10 Sep.</div></div>' +
+        '</div>' +
+        '<div class="ui-foot js-f7"><span class="ui-btn">Submit</span><span class="ui-btn red">Cancel</span></div>'
+    })
+  }), notes: [
+    { sel: '.js-card1', n: 1, dp: 'b' },
+    { sel: '.js-f1', n: 2, dp: 'b' },
+    { sel: '.js-f2', n: 3, dp: 'b' },
+    { sel: '.js-f4', n: 4, dp: 'b' },
+    { sel: '.js-f5', n: 5, dp: 'b' },
+    { sel: '.js-f6', n: 6, dp: 'b' },
+    { sel: '.js-f7', n: 7, dp: 'l' }
+  ] };
+
+  /* submitting it */
+  FIGS['legal-submit'] = { h: 755, html: shell({
+    name: 'VIJAY SHELKE', role: 'PLANT HR', bell: 2, title: 'LEGAL NOTICE DASHBOARD', filter: false,
+    links: LN_LINKS, cards: lnCards(),
+    body: listCard({
+      cls: 'h-pending', title: 'Legal Notice View', right: BACK, raw:
+        '<div class="ui-cardbody">' + legalDetail({
+          no: 'LNTC/1003/08/26/007', pc: '1003', cat: 'FACTORIES ACT', sub: 'SHOW CAUSE NOTICE',
+          due: '2026-09-10', file: 'SHOW_CAUSE_1003.pdf',
+          history: [LN_RAISED, ['VIJAY SHELKE', '-', '-', '-', bd('Submission Pending', 'b-warn')]],
+          action: legalActionSubmit()
+        }) + '</div>'
+    })
+  }), notes: [
+    { sel: '.js-no', n: 1, dp: 'b' },
+    { sel: '.js-h1', n: 2, dp: 'l' },
+    { sel: '.js-h2', n: 3, dp: 'l' },
+    { sel: '.js-date', n: 4, dp: 'b' },
+    { sel: '.js-up', n: 5, dp: 'b' },
+    { sel: '.js-cmt', n: 6, dp: 'b' },
+    { sel: '.js-foot', n: 7, dp: 'l' }
+  ] };
+
+  /* deciding on it */
+  FIGS['legal-approve'] = { h: 835, html: shell({
+    name: 'SAGAR SHEWALKAR', role: 'COMP ADMIN', bell: 3, title: 'LEGAL NOTICE DASHBOARD', filter: false,
+    links: [['fa-tachometer-alt', 'Comp Admin Dashboard'], ['fa-gavel', 'Legal Notice', true], ['fa-wrench', 'Admin Settings']],
+    cards: cards([
+      { v: '4',  label: 'Pending',  cls: 'c-pending' },
+      { v: '19', label: 'Approved', cls: 'c-green' },
+      { v: '2',  label: 'Overdue',  cls: 'c-draft' },
+      { v: '1',  label: 'Rejected', cls: 'c-red' }
+    ]),
+    body: listCard({
+      cls: 'h-pending', title: 'Legal Notice View', right: BACK, raw:
+        '<div class="ui-cardbody">' + legalDetail({
+          no: 'LNTC/1003/08/26/007', pc: '1003', cat: 'FACTORIES ACT', sub: 'SHOW CAUSE NOTICE',
+          due: '2026-09-10', file: 'SHOW_CAUSE_1003.pdf',
+          history: [LN_RAISED, LN_SUBMITTED,
+                    ['SAGAR SHEWALKAR', '-', '-', '-', bd('Approval Pending', 'b-warn')]],
+          action: legalActionApprove()
+        }) + '</div>'
+    })
+  }), notes: [
+    { sel: '.js-card4', n: 1, dp: 'b' },
+    { sel: '.js-h2', n: 2, dp: 'l' },
+    { sel: '.js-h3', n: 3, dp: 'l' },
+    { sel: '.js-radio', n: 4, dp: 'r' },
+    { sel: '.js-cmt', n: 5, dp: 'r' },
+    { sel: '.js-foot', n: 6, dp: 'l' }
   ] };
 
   /* ── annotation engine ─────────────────────────────────────────────────── */
@@ -1964,6 +2386,10 @@ table.ui-t.wide td{padding:5px 2px}
       var shot = document.createElement('div');
       shot.className = 'shot';
       shot.style.height = spec.h + 'px';
+      /* Print zoom, fixed per figure. 0.86 fits the 1180px canvas across
+         275mm of paper; 640/h keeps the shot plus its caption inside the
+         188mm the page has. Whichever is smaller wins. */
+      shot.style.setProperty('--pz', Math.min(0.86, 640 / spec.h).toFixed(3));
       shot.innerHTML = spec.html;
       st.appendChild(shot);
       place(shot, spec.notes || []);

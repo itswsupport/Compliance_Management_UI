@@ -19,6 +19,7 @@ import {
 } from '@mui/x-data-grid';
 import { IconButton, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { effectiveStatus } from '../../utils/complianceRows';
 
 const PAGE_SIZES = [10, 25, 50, 100];
 const ACTION_LABELS = ['ACTION', 'DELETE', 'VIEW', 'EDIT'];
@@ -254,9 +255,20 @@ export default function DataTable({ columns = [], data = [], reportTitle = 'Repo
         4: 'Approval Pending', 5: 'Pending', 6: 'Compliance Assigned',
         11: 'Approval Pending', 22: 'Final Approval Pending', [-2]: 'Rejected',
       };
-      return statusMap[row.status] ?? String(row.status ?? '-');
+      // effectiveStatus, not row.status, so an Excel/PDF export says the same
+      // thing the badge on screen does for a record the old server marked
+      // approved before its final approval. Rows from the other flows have no
+      // compActionList and fall straight through to their own status.
+      const eff = effectiveStatus(row);
+      return statusMap[eff] ?? String(eff ?? '-');
     }
     if (col.key === 'dueDate') {
+      // A legal notice carries its due date directly, in dueDate. A compliance
+      // keeps two - firstDueDate and lastDueDate - and picks between them by
+      // frequency, and has no dueDate field at all. Reading the row's own field
+      // first serves both; without it the export printed '-' for every legal
+      // notice while the screen showed the date.
+      if (row.dueDate) return row.dueDate;
       if (row.compFrequency === 'AS & WHEN') return row.lastDueDate || '-';
       return row.firstDueDate || '-';
     }

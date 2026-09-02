@@ -31,6 +31,14 @@ function parseDueDate(value) {
 }
 
 const dayKey = (y, m, d) => `${y}-${m}-${d}`;
+
+/**
+ * Legal notices share this calendar with compliances and are drawn in red so
+ * the two are told apart at a glance. The flag is set by whoever maps a notice
+ * into a calendar row; a compliance never carries it.
+ */
+const LEGAL_RED = '#df4759';
+const isLegal = (row) => Boolean(row?.isLegalNotice);
 export default function ComplianceCalendar({
   data = [],
   onSelect,
@@ -219,9 +227,12 @@ export default function ComplianceCalendar({
                       <span key={`${row.id}-${k}`} className="flex items-center gap-1 min-w-0">
                         <span
                           className="w-[7px] h-[7px] rounded-full shrink-0"
-                          style={{ backgroundColor: colorOf[row.compActType] || '#9ca3af' }}
+                          style={{ backgroundColor: isLegal(row) ? LEGAL_RED : (colorOf[row.compActType] || '#9ca3af') }}
                         />
-                        <span className="text-[10px] leading-tight text-gray-700 truncate">
+                        <span
+                          className={`text-[10px] leading-tight truncate ${isLegal(row) ? 'font-bold' : 'text-gray-700'}`}
+                          style={isLegal(row) ? { color: LEGAL_RED } : undefined}
+                        >
                           {row.compActType || row.compSrNo}
                         </span>
                       </span>
@@ -259,14 +270,20 @@ export default function ComplianceCalendar({
                 >
                   <span
                     className="w-[7px] h-[7px] rounded-full mt-[5px] shrink-0"
-                    style={{ backgroundColor: colorOf[row.compActType] || '#9ca3af' }}
+                    style={{ backgroundColor: isLegal(row) ? LEGAL_RED : (colorOf[row.compActType] || '#9ca3af') }}
                   />
                   <span className="min-w-0">
-                    <span className="block text-[11px] font-semibold text-[#3482AE]">
+                    <span
+                      className="block text-[11px] font-semibold"
+                      style={{ color: isLegal(row) ? LEGAL_RED : '#3482AE' }}
+                    >
                       {row.compSrNo}
                       {row.plantCode ? ` · ${row.plantCode}` : ''}
                     </span>
-                    <span className="block text-[11px] text-gray-600 truncate">
+                    <span
+                      className="block text-[11px] truncate"
+                      style={{ color: isLegal(row) ? LEGAL_RED : undefined }}
+                    >
                       {row.compActType || '-'}
                       {row.compActSubType ? ` — ${row.compActSubType}` : ''}
                     </span>

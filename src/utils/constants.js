@@ -134,6 +134,17 @@ export const ENDPOINTS = {
   NOTICE_DETAILS:  'notice/details/by_id',
   NOTICE_DELETE:   'notice/delete',               // Comp Admin only
   NOTICE_DOWNLOAD: 'notice/download/file',        // takes the notice id alone
+
+  // Legal notice — raised by a Plant HR, approved by the Comp Admin. A flow of
+  // its own on its own tables; nothing here is shared with NOTICE_* above.
+  LEGAL_NOTICE_LIST:            'legal_notice/list',                 // every role, scoped by the server
+  LEGAL_NOTICE_SAVE:            'legal_notice/save',                 // Plant HR only
+  LEGAL_NOTICE_DETAILS:         'legal_notice/details/by_id',
+  LEGAL_NOTICE_PLANTS:          'legal_notice/plants',               // the plants one Plant HR may raise against
+  LEGAL_NOTICE_ACTION_LIST:     'legal_notice/action/list',
+  LEGAL_NOTICE_ACTION_SAVE:     'legal_notice/action/save',          // Plant HR submit, Comp Admin approve/reject
+  LEGAL_NOTICE_DOWNLOAD:        'legal_notice/download/file',        // takes the notice id alone
+  LEGAL_NOTICE_ACTION_DOWNLOAD: 'legal_notice/action/download/file', // takes the ACTION id
 };
 
 // Add: per-role level info, since every legacy list() call passes a different level/authLevel

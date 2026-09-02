@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { viewPathForUser } from '../../utils/roleRoutes';
 import { sectionOf } from '../../utils/navSection';
 import { onNoticesRead } from '../../utils/noticeRead';
-import { LS_KEYS } from '../../utils/constants';
 import { onRecordOpened } from '../../utils/recordOpened';
 import {
   getNotifications,
@@ -45,15 +44,21 @@ const DEFAULT_LOOK = { icon: 'fas fa-bell', color: '#869099' };
  * raised. A record awaiting the Comp Head opens on the Comp Head dashboard even
  * when the user also holds another role, or the approve form is not there.
  * Null when they hold no role that can act, and the caller falls back to their
- * own view.
+ * own section.
+ *
+ * The SECTION, not the /view route. The bell used to send people straight to
+ * /plant-hr/view, a page with nothing behind it: no list, no filters, no tabs,
+ * and a Back button that had to be told where to return to. Naming the section
+ * lets the caller open the record on the list the same way every other screen
+ * does, which is also the only view that is still maintained.
  */
-function actionPath(user, authLevel) {
+function actionSection(user, authLevel) {
   const lvl = Number(authLevel);
-  if (lvl === 1 || lvl === 4) return (user.isPlantHr || user.isChd) ? '/plant-hr/view' : null;
-  if (lvl === 3) return user.isHcmHead ? '/hcm-head/view' : null;
+  if (lvl === 1 || lvl === 4) return (user.isPlantHr || user.isChd) ? 'plant-hr' : null;
+  if (lvl === 3) return user.isHcmHead ? 'hcm-head' : null;
   if (lvl === 2) {
-    if (user.isCompHead) return '/comp-head/view';
-    if (user.isCorpHr) return '/corp-hr/view';
+    if (user.isCompHead) return 'comp-head';
+    if (user.isCorpHr) return 'corp-hr';
   }
   return null;
 }
@@ -105,12 +110,12 @@ export default function NotificationBell() {
   // is looking at.
   useEffect(() => {
     if (!empCode) return undefined;
-    return onRecordOpened(async (referenceId) => {
-      // A notice entry points at a notice id, which can collide with a
-      // compliance id — different tables. Only compliance rows are meant here,
-      // and only they have a server row to mark read.
+    return onRecordOpened(async (referenceId, type) => {
+      // Matched on the type as well as the id. Compliances, notices and legal
+      // notices live in three tables whose ids overlap freely, so an id on its
+      // own would let one of them answer another's notification.
       const hits = itemsRef.current.filter(
-        (n) => n.type !== 'NOTICE' && String(n.referenceId) === referenceId,
+        (n) => n.type === type && String(n.referenceId) === referenceId,
       );
       if (hits.length === 0) return;
 
@@ -166,17 +171,47 @@ export default function NotificationBell() {
       return;
     }
 
+    // A legal notice has one screen for every role, and that screen decides
+    // what this user may do with it — so the bell does not choose a dashboard
+    // the way it does for a compliance below. The id travels in router state
+    // rather than localStorage: legal notice ids share a number space with
+    // compliance ids, and LS_KEYS.ID already means "the open compliance".
+    if (n.type === 'LEGAL_NOTICE') {
+      try {
+        await markNotificationRead(n.id, empCode);
+      } catch {
+        // Navigate anyway; the row simply returns on the next read.
+      }
+      // The id rides in the QUERY, not in router state. State is invisible, is
+      // dropped by any <Navigate replace> in the way, and does not change the
+      // URL — so navigating to a screen the user is already on can leave the
+      // effect with nothing new to react to. A query param changes the location
+      // every time, survives a redirect, and can be read straight off the
+      // address bar when something goes wrong.
+      navigate(`/legal-notice/list?open=${n.referenceId}`);
+      return;
+    }
+
     try {
       await markNotificationRead(n.id, empCode);
     } catch {
       // Navigate anyway; the row simply returns on the next read.
     }
 
-    localStorage.setItem(LS_KEYS.ID, n.referenceId);
-    // Where they can act on it, else their own view. Back goes to that view's
-    // own dashboard rather than wherever the bell happened to be clicked from.
-    const target = actionPath(user, n.authLevel) || viewPathForUser(user);
-    navigate(target, { state: { backTo: `/${sectionOf(target)}/pending` } });
+    // Opened on the list, by id in the query - the same way the calendar and a
+    // legal notice already open one, and for the same reason given above: a
+    // query param changes the location every time, so clicking a second
+    // notification while the first record is still on screen actually swaps it.
+    // The old route put the id in localStorage and navigated to a bare /view
+    // page, which showed the previous record when the location did not change,
+    // and had no list to go back to when it did.
+    //
+    // The tab is Pending because that is where a notification's record is by
+    // definition - something is waiting on somebody. ?open= shows the record
+    // regardless of which tab is behind it, so this only decides what is
+    // revealed on Back.
+    const section = actionSection(user, n.authLevel) || sectionOf(viewPathForUser(user));
+    navigate(`/${section}/pending?open=${n.referenceId}`);
   }
 
   if (!user) return null;
@@ -190,7 +225,7 @@ export default function NotificationBell() {
       >
         <i className="fas fa-bell text-sm" />
         {items.length > 0 && (
-          <span className="absolute top-0 right-0 min-w-[15px] h-[15px] px-[3px] rounded-full bg-[#e74c3c] text-white text-[9px] font-bold flex items-center justify-center leading-none">
+          <span className="bell-badge-blink absolute top-0 right-0 min-w-[15px] h-[15px] px-[3px] rounded-full bg-[#e74c3c] text-white text-[9px] font-bold flex items-center justify-center leading-none">
             {items.length > 99 ? '99+' : items.length}
           </span>
         )}

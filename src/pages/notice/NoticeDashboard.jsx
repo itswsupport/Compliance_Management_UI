@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getNoticeList, getNoticeDownloadUrl, deleteNotice } from '../../services/noticeService';
 import { extractFilename } from '../../utils/formatters';
 import { filterNoticesByPeriod, noticeYearsIn } from '../../utils/noticeRows';
-import { sectionForUser, NAV_CARDS_BY_SECTION } from '../../utils/navCards';
+import { sectionForUser, NAV_CARDS_BY_SECTION, dashboardTitle } from '../../utils/navCards';
 import { markNoticeNotificationsRead } from '../../services/notificationService';
 import { noticesRead } from '../../utils/noticeRead';
 import { getPeriod, setPeriod as setSharedPeriod } from '../../utils/periodFilter';
@@ -50,7 +50,17 @@ export default function NoticeDashboard() {
   // The dashboard this page is standing in for: the one whose NOTICE card
   // opened it, and only failing that the user's own. Set by the card — see
   // DashboardNavCards — so it is absent when the page is reached by URL.
-  const section = state?.fromSection || sectionForUser(user);
+  // Only a section that HAS a dashboard behind it. A card click reports where it
+  // came from, and that can be a screen which is not a dashboard at all — the
+  // Legal Notice workspace reports "legal-notice", which owns no card row and no
+  // title. Taken at face value it left this page with an empty card strip and
+  // the generic "NOTICE DASHBOARD" heading, but only when the user happened to
+  // arrive from there, which is why it looked intermittent.
+  //
+  // Falling back to the user's own dashboard is right for any such screen,
+  // present or future, rather than naming them one by one.
+  const from = state?.fromSection;
+  const section = NAV_CARDS_BY_SECTION[from] ? from : sectionForUser(user);
 
   // Withdrawing belongs to the Comp Admin dashboard, not merely to somebody who
   // holds the role. A user who is both Comp Admin and Comp Head reads notices
@@ -239,7 +249,14 @@ export default function NoticeDashboard() {
 
   return (
     <div className="space-y-3">
-      <h1 className="section-title no-print">NOTICE DASHBOARD</h1>
+      {/* The heading of the dashboard this page is standing in for, not this
+          page's own name. The user clicked a card on their dashboard and has not
+          gone anywhere else — every other card on that row keeps the heading and
+          changes only the card header below, and so does this one. Falls back to
+          NOTICE DASHBOARD when no dashboard applies. */}
+      <h1 className="section-title no-print">
+        {dashboardTitle(section, user) || 'NOTICE DASHBOARD'}
+      </h1>
 
       {/* The same card row every other dashboard opens with — this page belongs
           to no single role, so it borrows the row of whichever dashboard this

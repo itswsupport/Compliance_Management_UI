@@ -26,8 +26,18 @@ export function onRecordOpened(fn) {
   return () => { listeners.delete(fn); };
 }
 
-/** Announce that the record with this id is now on screen. */
-export function recordOpened(referenceId) {
+/**
+ * Announce that the record with this id is now on screen.
+ *
+ * The type travels with it because a reference id alone does not identify a
+ * record: compliance_master, compliance_notice and compliance_legal_notice are
+ * three tables whose ids overlap freely, so legal notice 7 would otherwise
+ * answer the notification about compliance 7.
+ *
+ * Defaults to COMPLIANCE for the callers that predate this — the compliance
+ * lists, which are the only ones that ever passed an id on its own.
+ */
+export function recordOpened(referenceId, type = 'COMPLIANCE') {
   if (referenceId === null || referenceId === undefined || referenceId === '') return;
-  listeners.forEach((fn) => fn(String(referenceId)));
+  listeners.forEach((fn) => fn(String(referenceId), type));
 }
