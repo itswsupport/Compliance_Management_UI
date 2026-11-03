@@ -12,6 +12,16 @@ import { createPortal } from 'react-dom';
  *   disabled    – disables the control
  *   className   – extra class on the wrapper
  *   maxHeight   – tallest the dropdown panel may get, in px, before it scrolls
+ *
+ * Multi-select (multiple = true):
+ *   value          – array of selected values (strings)
+ *   onChange       – (values: string[]) => void
+ *   selectAllLabel – when given, a "select all" checkbox row on top with this
+ *                    label; the trigger shows it too once everything is ticked
+ *   countLabel     – noun for the trigger when several are ticked, e.g.
+ *                    'PLANTS' → "3 PLANTS SELECTED"
+ *   Each option gets a checkbox and the panel stays open while ticking, so
+ *   several can be picked in one go.
  */
 export default function SearchableSelect({
   id,
@@ -25,6 +35,9 @@ export default function SearchableSelect({
   buttonClassName = '',
   optionClassName = 'text-gray-400',
   maxHeight = 260,
+  multiple = false,
+  selectAllLabel = '',
+  countLabel = '',
 }) {
   const [open, setOpen]   = useState(false);
   const [query, setQuery] = useState('');
@@ -35,11 +48,29 @@ export default function SearchableSelect({
 
   const selected = options.find((o) => String(o.value) === String(value));
 
+  // Multi-select works on strings throughout, so a numeric id and its string
+  // form never count as two different ticks.
+  const picked     = multiple ? (Array.isArray(value) ? value.map(String) : []) : [];
+  const isPicked   = (v) => picked.includes(String(v));
+  const allPicked  = multiple && options.length > 0 && options.every((o) => isPicked(o.value));
+  const somePicked = multiple && picked.length > 0 && !allPicked;
+
   const filtered = query.trim()
     ? options.filter((o) =>
         String(o.label).toLowerCase().includes(query.toLowerCase())
       )
     : options;
+
+  function triggerText() {
+    if (!multiple) return selected ? selected.label : placeholder;
+    if (picked.length === 0) return placeholder;
+    if (allPicked && selectAllLabel) return selectAllLabel;
+    if (picked.length === 1) {
+      const only = options.find((o) => isPicked(o.value));
+      return only ? only.label : placeholder;
+    }
+    return `${picked.length} ${countLabel || 'ITEMS'} SELECTED`;
+  }
 
   useLayoutEffect(() => {
     if (open && wrapRef.current) {
@@ -73,9 +104,21 @@ export default function SearchableSelect({
   }, [open]);
 
   function handleSelect(opt) {
+    if (multiple) {
+      // Toggle, and keep the panel open with the search as typed, so the next
+      // plant can be ticked straight away.
+      const v = String(opt.value);
+      onChange(isPicked(v) ? picked.filter((x) => x !== v) : [...picked, v]);
+      return;
+    }
     onChange(opt.value);
     setOpen(false);
     setQuery('');
+  }
+
+  // Ticks everything, or clears everything once all are already ticked.
+  function handleSelectAll() {
+    onChange(allPicked ? [] : options.map((o) => String(o.value)));
   }
 
   function handleClear(e) {
@@ -99,7 +142,7 @@ export default function SearchableSelect({
           className="truncate flex-1 uppercase"
           style={{ fontSize: '11px', color: '#000' }}
         >
-          {selected ? selected.label : placeholder}
+          {triggerText()}
         </span>
         <span className="flex items-center gap-1 shrink-0">
           <i
@@ -148,12 +191,53 @@ export default function SearchableSelect({
 
           {/* Options list */}
           <div className="dropdown-scroll" style={{ overflowY: 'auto', flex: 1 }}>
+            {/* Select-all row. Hidden while searching: "all" there would be
+                ambiguous between every option and only the ones showing. */}
+            {multiple && selectAllLabel && !query.trim() && options.length > 0 && (
+              // A div, not a <label>: the app's global label style is bold and
+              // larger, which made these rows look nothing like the others.
+              <div
+                onClick={handleSelectAll}
+                className={`px-3 py-1.5 cursor-pointer uppercase leading-snug flex items-center gap-2 border-b border-gray-200 ${optionClassName} hover:bg-[#007BFF] hover:text-white`}
+                style={{ fontSize: '11px' }}
+              >
+                {/* pointer-events-none: the row's click does the toggling, so a
+                    click on the box itself does not toggle twice. */}
+                <input
+                  type="checkbox"
+                  className="pointer-events-none shrink-0"
+                  checked={allPicked}
+                  readOnly
+                  tabIndex={-1}
+                  // Partly ticked shows as the dash, not as empty.
+                  ref={(el) => { if (el) el.indeterminate = somePicked; }}
+                />
+                {selectAllLabel}
+              </div>
+            )}
             {filtered.length === 0 ? (
               <div className="px-3 py-2 text-gray-400 text-center uppercase" style={{ fontSize: '12px' }}>
                 No results found
               </div>
             ) : (
-              filtered.map((opt, i) => (
+              filtered.map((opt, i) => multiple ? (
+                  <div
+                    key={`${opt.value}__${i}`}
+                    onClick={() => handleSelect(opt)}
+                    className={`px-3 py-1.5 cursor-pointer uppercase break-words leading-snug flex items-center gap-2 ${optionClassName} hover:bg-[#007BFF] hover:text-white`}
+                    style={{ fontSize: '11px' }}
+                    title={opt.label}
+                  >
+                    <input
+                      type="checkbox"
+                      className="pointer-events-none shrink-0"
+                      checked={isPicked(opt.value)}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                    {opt.label}
+                  </div>
+              ) : (
                   <div
                     key={`${opt.value}__${i}`}
                     onClick={() => handleSelect(opt)}

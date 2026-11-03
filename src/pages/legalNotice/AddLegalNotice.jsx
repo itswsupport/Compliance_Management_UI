@@ -13,7 +13,8 @@ import { ACCEPT, FILE_HINT, fileError } from '../../utils/attachments';
 // treatment the Add Notice and Compliance View forms give their long fields.
 const DESC_MAX = 2000;
 const EMPTY_FORM = {
-  plant: '',
+  // Ids of the ticked plants (strings).
+  plant: [],
   noticeDesc: '',
   noticeCategory: '',
   noticeSubCategory: '',
@@ -29,8 +30,12 @@ const EMPTY_FORM = {
  * other. That is its only host, and the host is what decides only a Plant HR
  * reaches it — there is no role check here.
  *
- * Unlike Add Notice there is no ALL PLANTS row. A legal notice is raised against
- * one plant the raiser is Plant HR of, and the plant is part of its number.
+ * A legal notice belongs to one plant the raiser is Plant HR of, and the plant
+ * is part of its number. Several plants can be ticked, but that raises one
+ * legal notice PER plant — each with its own number and its own flow — the way
+ * Assign Compliance does, not one notice spread over many plants the way Add
+ * Notice does. The ALL PLANTS row ticks every plant in this list, which is
+ * only the raiser's own plants, never every plant in the company.
  *
  * @param {function} onSaved called once a legal notice is raised
  * @param {function} onCancel leave the form without raising one
@@ -42,6 +47,9 @@ export default function AddLegalNotice({ onSaved, onCancel }) {
   const [actTypes, setActTypes] = useState([]);
   const [subTypes, setSubTypes] = useState([]);
   const [saving, setSaving]     = useState(false);
+  // "n of m" while raising for several plants — one save each, so a bare
+  // spinner would read as a hang.
+  const [progress, setProgress] = useState(null);
   const [errors, setErrors]     = useState({});
   const [form, setForm]         = useState(EMPTY_FORM);
   // Bumped after a save so the file input — which React cannot clear by value —
@@ -59,7 +67,7 @@ export default function AddLegalNotice({ onSaved, onCancel }) {
         // not have to tell the form the only thing it could possibly be, so it
         // is selected for them; four plants is a real question and is asked.
         if (list.length === 1) {
-          setForm((f) => ({ ...f, plant: String(list[0].id) }));
+          setForm((f) => ({ ...f, plant: [String(list[0].id)] }));
         }
       })
       .catch(() => {
@@ -80,7 +88,7 @@ export default function AddLegalNotice({ onSaved, onCancel }) {
 
   function validate() {
     const e = {};
-    if (!form.plant)                     e.plant = 'PLEASE SELECT PLANT';
+    if (form.plant.length === 0)         e.plant = 'PLEASE SELECT PLANT';
     if (!form.noticeCategory)            e.noticeCategory = 'PLEASE SELECT CATEGORY';
     if (!form.noticeSubCategory)         e.noticeSubCategory = 'PLEASE SELECT SUBCATEGORY';
     if (!form.dueDate)                   e.dueDate = 'PLEASE SELECT DUE DATE';
@@ -96,7 +104,7 @@ export default function AddLegalNotice({ onSaved, onCancel }) {
   function resetForm() {
     // The pre-selected plant survives a reset, because it was never a choice —
     // clearing it would leave the form in a state the user cannot re-create.
-    setForm({ ...EMPTY_FORM, plant: onlyPlant ? String(plants[0].id) : '' });
+    setForm({ ...EMPTY_FORM, plant: onlyPlant ? [String(plants[0].id)] : [] });
     setSubTypes([]);
     setErrors({});
     setFileKey((k) => k + 1);
@@ -106,50 +114,93 @@ export default function AddLegalNotice({ onSaved, onCancel }) {
     e.preventDefault();
     if (!validate()) return;
 
-    const fd = new FormData();
-    fd.append('plant', form.plant);
-    // No noticeSubject: the server composes it from the category and
-    // subcategory, the way the compliance flow composes its own references.
-    fd.append('noticeDesc', form.noticeDesc.trim());
-    fd.append('noticeCategory', form.noticeCategory);
-    fd.append('noticeSubCategory', form.noticeSubCategory);
-    fd.append('dueDate', form.dueDate);
-    fd.append('regDate', todayDate());
-    fd.append('regTime', currentTime());
-    fd.append('empCode', user?.empCode || localStorage.getItem(LS_KEYS.GLOBAL_EMP_CODE));
-    // ...1, matching the server's param name — the entity already owns a String
-    // `noticeAttachment`, which the binder would claim first.
-    fd.append('noticeAttachment1', form.attachment);
+    // One legal notice per ticked plant: the endpoint takes one plant, and each
+    // notice is numbered by its plant. Sequential on purpose — each save writes
+    // a file and sends mail. Filtered from `plants` so they run in list order.
+    const targets = plants.filter((p) => form.plant.includes(String(p.id)));
+    if (targets.length === 0) return;
+
+    const regDate = todayDate();
+    const regTime = currentTime();
+    const buildForm = (p) => {
+      const fd = new FormData();
+      fd.append('plant', String(p.id));
+      // No noticeSubject: the server composes it from the category and
+      // subcategory, the way the compliance flow composes its own references.
+      fd.append('noticeDesc', form.noticeDesc.trim());
+      fd.append('noticeCategory', form.noticeCategory);
+      fd.append('noticeSubCategory', form.noticeSubCategory);
+      fd.append('dueDate', form.dueDate);
+      fd.append('regDate', regDate);
+      fd.append('regTime', regTime);
+      fd.append('empCode', user?.empCode || localStorage.getItem(LS_KEYS.GLOBAL_EMP_CODE));
+      // ...1, matching the server's param name — the entity already owns a String
+      // `noticeAttachment`, which the binder would claim first.
+      fd.append('noticeAttachment1', form.attachment);
+      return fd;
+    };
 
     setSaving(true);
+    const failed = [];
+    let okCount = 0;
+    let okMsg = '';
     try {
-      const res = await saveLegalNotice(fd);
-      if (res.data?.status_code === 200) {
+      for (let i = 0; i < targets.length; i++) {
+        const p = targets[i];
+        setProgress({ done: i, total: targets.length });
+        try {
+          const res = await saveLegalNotice(buildForm(p));
+          if (res.data?.status_code === 200) {
+            okCount += 1;
+            okMsg = res.data?.message || okMsg;
+          } else failed.push({ code: p.plantCode, msg: res.data?.message });
+        } catch (err) {
+          // A refusal comes back with a non-2xx, which axios throws. Its body
+          // still carries the reason.
+          failed.push({ code: p.plantCode, msg: err?.response?.data?.message });
+        }
+      }
+
+      if (failed.length === 0) {
         await Swal.fire({
-          title: res.data?.message || 'Legal Notice Added Successfully.',
+          title: targets.length > 1
+            ? `Legal Notice Added For ${okCount} Plants`
+            : okMsg || 'Legal Notice Added Successfully.',
           icon: 'success',
           timer: 2000,
           showConfirmButton: false,
         });
-        resetForm();
-        onSaved?.();
+      } else if (okCount > 0) {
+        await Swal.fire({
+          title: `Added For ${okCount} Of ${targets.length} Plants`,
+          html: `Could not add for:<br><b>${failed.map((f) => f.code).join(', ')}</b>`
+            + `<br><small>${failed[0].msg || 'Please try again.'}</small>`,
+          icon: 'warning',
+          confirmButtonColor: '#42ba96',
+        });
       } else {
         await Swal.fire({
-          title: res.data?.message || 'Legal Notice Could Not Be Added',
+          title: failed[0].msg || 'Legal Notice Could Not Be Added',
           icon: 'warning',
           confirmButtonColor: '#42ba96',
         });
       }
-    } catch (err) {
-      // A refusal comes back with a non-2xx, which axios throws. Its body still
-      // carries the reason.
+
+      // Anything saved is on the list now, so leave the form for it — even when
+      // some plants failed, since those are named in the message above.
+      if (okCount > 0) {
+        resetForm();
+        onSaved?.();
+      }
+    } catch {
       await Swal.fire({
-        title: err?.response?.data?.message || 'An error occurred while adding the legal notice',
+        title: 'An error occurred while adding the legal notice',
         icon: 'error',
         confirmButtonColor: '#42ba96',
       });
     } finally {
       setSaving(false);
+      setProgress(null);
     }
   }
 
@@ -158,19 +209,23 @@ export default function AddLegalNotice({ onSaved, onCancel }) {
       <div className="p-5">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-5 gap-y-3 items-start">
 
-          {/* SELECT PLANT */}
+          {/* SELECT PLANT — checkboxes, the same control Assign Compliance
+              uses. One legal notice is raised per ticked plant. */}
           <div className="form-group">
             <label className="form-label">
               SELECT PLANT <span className="text-red-500 font-bold ml-0.5">*</span>
             </label>
             <SearchableSelect
               id="sel_legal_notice_plant"
+              multiple
+              selectAllLabel="ALL PLANTS"
+              countLabel="PLANTS"
               value={form.plant}
               placeholder="Select Plant"
               optionClassName="text-gray-800"
               // Locked when there is only one — it is the answer, not a choice.
               disabled={onlyPlant}
-              onChange={(val) => setForm((f) => ({ ...f, plant: val }))}
+              onChange={(vals) => setForm((f) => ({ ...f, plant: vals }))}
               options={plants.map((p) => ({
                 value: String(p.id),
                 label: `${p.plantName} - ${p.plantCode}`,
@@ -325,7 +380,14 @@ export default function AddLegalNotice({ onSaved, onCancel }) {
           id="addLegalNoticeButton"
           className="btn text-white bg-[#3482AE] hover:bg-[#2A6B91] px-5 py-1.5 rounded uppercase font-bold text-xs border-0 cursor-pointer min-w-24 flex items-center justify-center gap-1.5"
         >
-          {saving ? (<><span className="loading-spinner" /> Processing…</>) : 'SUBMIT'}
+          {saving ? (
+            <>
+              <span className="loading-spinner" />
+              {progress && progress.total > 1
+                ? `Adding ${progress.done + 1} of ${progress.total}…`
+                : 'Processing…'}
+            </>
+          ) : 'SUBMIT'}
         </button>
         {/* Cancel rather than Reset: unlike Add Notice this form is a tab, so
             there IS somewhere to go back to — the list behind it. */}

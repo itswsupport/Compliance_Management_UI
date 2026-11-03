@@ -30,9 +30,6 @@ const NAV_CARDS = NAV_CARDS_BY_SECTION['comp-admin'];
  */
 const CALENDAR_STATUSES = [0, 3, 4, 11, 2, 5];
 
-// Sentinel for the "all plants" row. Not a plant id, so it can never collide.
-const ALL_PLANTS = 'ALL';
-
 // The two things the Compliance Admin raises from this screen. One form serves
 // both — plant, category, subcategory and the document are the same question
 // either way. All the request type decides is where the form is sent: a
@@ -73,8 +70,8 @@ export default function AssignCompliance() {
   const [errors, setErrors]       = useState({});
 
   const [form, setForm] = useState({
-    plant: '',
-    plantCode: '',
+    // Ids of the ticked plants (strings). Every plant ticked is ALL PLANTS.
+    plant: [],
     compActType: '',
     compActSubType: '',
     approvalFlowStatus: '',
@@ -101,15 +98,6 @@ export default function AssignCompliance() {
       setActTypes(aRes.data?.response || []);
     });
   }, []);
-
-  function handlePlantChange(e) {
-    const opt = e.target.options[e.target.selectedIndex];
-    setForm((f) => ({
-      ...f,
-      plant: e.target.value,
-      plantCode: opt.dataset.plantcode || '',
-    }));
-  }
 
   async function handleActTypeChange(val) {
     setForm((f) => ({ ...f, compActType: val, compActSubType: '', approvalFlowStatus: '' }));
@@ -151,7 +139,7 @@ export default function AssignCompliance() {
 
   function validate() {
     const e = {};
-    if (!form.plant)          e.plant = 'PLEASE SELECT PLANT';
+    if (form.plant.length === 0) e.plant = 'PLEASE SELECT PLANT';
     if (!form.compActType)    e.compActType = 'PLEASE SELECT COMPLIANCE CATEGORY';
     if (!form.compActSubType) e.compActSubType = 'PLEASE SELECT COMPLIANCE SUBCATEGORY';
 
@@ -186,16 +174,18 @@ export default function AssignCompliance() {
    * Send the form as a notice.
    *
    * No flow of any kind: one request, one save, and it is on the Notice
-   * Dashboard for the Plant HR and Group HR it was addressed to. ALL PLANTS is
-   * a flag rather than the fan-out a compliance does — the server still writes
-   * one row per plant, but a notice mails every compliance user, and 16
-   * requests would be 16 identical mails to each of them.
+   * Dashboard for the Plant HR and Group HR it was addressed to. Whatever plants
+   * are ticked, it is ONE request rather than the fan-out a compliance does —
+   * the server still writes one row per plant, but a notice mails every
+   * compliance user, and 16 requests would be 16 identical mails to each of
+   * them. Every plant ticked goes as the allPlants flag; a subset goes as the
+   * ids comma-separated ("3,5,7"), which the server splits.
    *
    * The act masters name the category either way; on a notice those same two
    * values are stored as the notice category and subcategory.
    */
   async function submitNotice() {
-    const allPlants = form.plant === ALL_PLANTS;
+    const allPlants = form.plant.length === plants.length;
 
     const fd = new FormData();
     // notice_subject is NOT NULL on the server and it is the SUBJECT column the
@@ -205,7 +195,7 @@ export default function AssignCompliance() {
     fd.append('noticeSubject', form.compActSubType.slice(0, SUBJECT_MAX));
     fd.append('noticeDesc', form.noticeDesc.trim());
     fd.append('allPlants', String(allPlants));
-    if (!allPlants) fd.append('plant', form.plant);
+    if (!allPlants) fd.append('plant', form.plant.join(','));
     fd.append('noticeCategory', form.compActType);
     fd.append('noticeSubCategory', form.compActSubType);
     fd.append('regDate', todayDate());
@@ -269,12 +259,11 @@ export default function AssignCompliance() {
     const dateString = form.compFrequency === 'AS & WHEN' ? form.startDate : form.firstDueDate;
     const applicableYear = dateString ? dateString.split('-')[0] : '';
 
-    // ALL PLANTS is a fan-out, not a batch: the endpoint takes one plant, so it
-    // is one save per plant. Sequential on purpose — each save writes a file and
-    // sends mail, and 16 at once would put that load on the server in one go.
-    const targets = form.plant === ALL_PLANTS
-      ? plants
-      : plants.filter((p) => String(p.id) === String(form.plant));
+    // Several plants are a fan-out, not a batch: the endpoint takes one plant, so
+    // it is one save per ticked plant. Sequential on purpose — each save writes a
+    // file and sends mail, and 16 at once would put that load on the server in
+    // one go. Filtered from `plants` so the saves run in the dropdown's order.
+    const targets = plants.filter((p) => form.plant.includes(String(p.id)));
 
     if (targets.length === 0) return;
 
@@ -460,29 +449,23 @@ export default function AssignCompliance() {
                   compliance-only and notice-only fields are marked where they
                   appear; the rest is asked either way. */}
 
-              {/* SELECT PLANT */}
+              {/* SELECT PLANT — checkboxes, so one plant, a handful, or (via
+                  the ALL PLANTS row on top) every plant can be picked. */}
               <div className="form-group">
                 <label className="form-label">SELECT PLANT <span className="text-red-500 font-bold ml-0.5">*</span></label>
                 <SearchableSelect
                   id="sel_plant"
+                  multiple
+                  selectAllLabel="ALL PLANTS"
+                  countLabel="PLANTS"
                   value={form.plant}
                   placeholder="Select Plant"
                   optionClassName="text-gray-800"
-                  onChange={(val) => {
-                    const p = plants.find((x) => String(x.id) === String(val));
-                    setForm((f) => ({
-                      ...f,
-                      plant: val,
-                      plantCode: p ? p.plantCode : '',
-                    }));
-                  }}
-                  options={[
-                    { value: ALL_PLANTS, label: 'ALL PLANTS' },
-                    ...plants.map((p) => ({
-                      value: String(p.id),
-                      label: `${p.plantName} - ${p.plantCode}`,
-                    })),
-                  ]}
+                  onChange={(vals) => setForm((f) => ({ ...f, plant: vals }))}
+                  options={plants.map((p) => ({
+                    value: String(p.id),
+                    label: `${p.plantName} - ${p.plantCode}`,
+                  }))}
                 />
                 {errors.plant && <p className="text-red-500 text-[10px] mt-1">{errors.plant}</p>}
               </div>
