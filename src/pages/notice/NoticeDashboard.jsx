@@ -6,6 +6,7 @@ import SearchableSelect from '../../components/ui/SearchableSelect';
 import DashboardNavCards, { clearSectionCache } from '../../components/ui/DashboardNavCards';
 import { useAuth } from '../../context/AuthContext';
 import { getNoticeList, getNoticeDownloadUrl, deleteNotice } from '../../services/noticeService';
+import { getPlantList } from '../../services/complianceService';
 import { extractFilename } from '../../utils/formatters';
 import { filterNoticesByPeriod, noticeYearsIn } from '../../utils/noticeRows';
 import { sectionForUser, NAV_CARDS_BY_SECTION, dashboardTitle } from '../../utils/navCards';
@@ -77,6 +78,20 @@ export default function NoticeDashboard() {
 
   const [data, setData]       = useState([]);
   const [loading, setLoading] = useState(true);
+  // How many real plants exist — the same list Assign Compliance offers. A
+  // notice is ALL PLANTS only when it went to this many; fewer is a selection.
+  // 0 until loaded (or if the call fails).
+  const [totalPlants, setTotalPlants] = useState(0);
+
+  useEffect(() => {
+    getPlantList()
+      .then((res) => {
+        // plant_code 0 is the "Default Plant" row nothing is ever sent to.
+        const list = (res.data?.response || []).filter((p) => Number(p.plantCode) !== 0);
+        setTotalPlants(list.length);
+      })
+      .catch(() => { /* leave 0: the column falls back to "N PLANTS" */ });
+  }, []);
 
   // The compliance dashboards' filter, not one of this page's own: seeded from
   // whatever is already selected and written straight back, so a year picked
@@ -177,12 +192,22 @@ export default function NoticeDashboard() {
     { key: 'noticeDesc', label: 'DESCRIPTION', width: 260 },
     {
       label: 'PLANT', width: 180,
-      // plantCount is how many plants the notice went to. More than one means it
-      // was published to every plant — the server sends one line per notice, not
-      // one per plant row, so the plant on that line is only one of them.
-      render: (row) => (row.plantCount > 1
-        ? 'ALL PLANTS'
-        : (row.plantName ? `${row.plantName} - ${row.plantCode}` : String(row.plantCode ?? '-'))),
+      // plantCount is how many plants the notice went to, counted by the server
+      // across every plant row (not just the ones this reader can see). The
+      // server sends one line per notice, so the plant on that line is only one
+      // of them.
+      //
+      // More than one used to mean ALL PLANTS, back when a notice could only go
+      // to one plant or to all. Now specific plants can be ticked, so it is ALL
+      // PLANTS only when it reached every plant; otherwise it is "N PLANTS".
+      render: (row) => {
+        if (row.plantCount > 1) {
+          return totalPlants > 0 && row.plantCount >= totalPlants
+            ? 'ALL PLANTS'
+            : `${row.plantCount} PLANTS`;
+        }
+        return row.plantName ? `${row.plantName} - ${row.plantCode}` : String(row.plantCode ?? '-');
+      },
     },
     // The values come from the compliance act masters, but on this dashboard
     // they name a notice, so that is what the columns are called.
